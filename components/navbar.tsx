@@ -56,7 +56,15 @@ export default function Navbar() {
         const storedItems = localStorage.getItem("yemnest_cart_items");
         if (storedItems) {
           try {
-            setCartItems(JSON.parse(storedItems));
+            const parsed = JSON.parse(storedItems);
+            if (Array.isArray(parsed)) {
+              const validItems = parsed.filter(
+                (item: any) => item && item.product && typeof item.product.id === "string"
+              );
+              setCartItems(validItems);
+            } else {
+              setCartItems([]);
+            }
           } catch (e) {
             setCartItems([]);
           }
@@ -121,15 +129,25 @@ export default function Navbar() {
 
   const updateCartQuantity = (productId: string, increment: boolean) => {
     const updated = cartItems.map((item) => {
-      if (item.product.id === productId) {
+      if (item?.product?.id === productId) {
         const newQty = increment ? item.quantity + 1 : item.quantity - 1;
         return { ...item, quantity: Math.max(1, newQty) };
       }
       return item;
     });
 
-    localStorage.setItem("yemnest_cart_items", JSON.stringify(updated));
-    const updatedCount = updated.reduce((sum, item) => sum + item.quantity, 0);
+    // Strip huge fields to prevent QuotaExceededError
+    const lightweightUpdated = updated.map(item => ({
+      ...item,
+      product: { ...item.product, image1: "", image2: "", image3: "", image4: "", description: "" }
+    }));
+
+    try {
+      localStorage.setItem("yemnest_cart_items", JSON.stringify(lightweightUpdated));
+    } catch (err) {
+      console.error("Failed to save cart to localStorage:", err);
+    }
+    const updatedCount = updated.reduce((sum, item) => sum + (item.quantity || 1), 0);
     localStorage.setItem("yemnest_cart_count", updatedCount.toString());
     window.dispatchEvent(new Event("yemnest_cart_updated"));
   };
@@ -230,7 +248,10 @@ export default function Navbar() {
 
   if (pathname && pathname.startsWith("/admin")) return null;
 
-  const cartTotal = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const cartTotal = cartItems.reduce(
+    (sum, item) => sum + Number(item?.product?.price || 0) * Number(item?.quantity || 1),
+    0
+  );
 
   return (
     <nav className="relative sticky top-0 z-40 w-full bg-[#FEFEFD] border-b border-zinc-200/60 shadow-sm rounded-none">
@@ -778,9 +799,21 @@ export default function Navbar() {
                         <button
                           type="button"
                           onClick={() => {
-                            const updated = cartItems.filter((i) => i.product.id !== item.product.id);
-                            localStorage.setItem("yemnest_cart_items", JSON.stringify(updated));
-                            const updatedCount = updated.reduce((sum, item) => sum + item.quantity, 0);
+                            const updated = cartItems.filter((i) => i?.product?.id !== item?.product?.id);
+                            
+                            // Strip huge fields to prevent QuotaExceededError
+                            const lightweightUpdated = updated.map(uItem => ({
+                              ...uItem,
+                              product: { ...uItem.product, image1: "", image2: "", image3: "", image4: "", description: "" }
+                            }));
+
+                            try {
+                              localStorage.setItem("yemnest_cart_items", JSON.stringify(lightweightUpdated));
+                            } catch (err) {
+                              console.error("Failed to save cart to localStorage:", err);
+                            }
+
+                            const updatedCount = updated.reduce((sum, i) => sum + (i.quantity || 1), 0);
                             localStorage.setItem("yemnest_cart_count", updatedCount.toString());
                             window.dispatchEvent(new Event("yemnest_cart_updated"));
                           }}

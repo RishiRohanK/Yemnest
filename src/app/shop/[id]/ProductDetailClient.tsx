@@ -29,7 +29,10 @@ export default function ProductDetailClient({ product }: { product: Product }) {
       let items: { product: Product; quantity: number }[] = [];
       if (stored) {
         try {
-          items = JSON.parse(stored);
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            items = parsed.filter((item: any) => item && item.product && typeof item.product.id === "string");
+          }
         } catch (e) {
           items = [];
         }
@@ -42,14 +45,32 @@ export default function ProductDetailClient({ product }: { product: Product }) {
         items.push({ product, quantity: 1 });
       }
 
-      localStorage.setItem("yemnest_cart_items", JSON.stringify(items));
+      // Strip huge fields (like base64 images) to prevent QuotaExceededError in localStorage
+      const lightweightItems = items.map(item => ({
+        ...item,
+        product: {
+          ...item.product,
+          image1: "",
+          image2: "",
+          image3: "",
+          image4: "",
+          description: ""
+        }
+      }));
+
+      try {
+        localStorage.setItem("yemnest_cart_items", JSON.stringify(lightweightItems));
+      } catch (err) {
+        console.error("Failed to save cart to localStorage:", err);
+      }
 
       // Calculate total count
-      const totalCount = items.reduce((sum, item) => sum + item.quantity, 0);
+      const totalCount = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
       localStorage.setItem("yemnest_cart_count", totalCount.toString());
 
-      // Dispatch global update event
+      // Dispatch global update event & open cart drawer
       window.dispatchEvent(new Event("yemnest_cart_updated"));
+      window.dispatchEvent(new Event("yemnest_open_cart"));
     }
 
     setCartToast(true);

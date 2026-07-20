@@ -76,7 +76,8 @@ export default function Collections() {
               </div>
               <button
                 type="button"
-                className="w-full text-center bg-zinc-900 text-white text-xs uppercase tracking-wider py-3.5 rounded-none hover:bg-zinc-800 transition-colors"
+                onClick={() => window.location.href = "/shop"}
+                className="w-full text-center bg-zinc-900 text-white text-xs uppercase tracking-wider py-3.5 rounded-none hover:bg-zinc-800 transition-colors cursor-pointer"
               >
                 Shop Now
               </button>
