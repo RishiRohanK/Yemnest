@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
+import Link from "next/link";
 
 const banners = [
   {
-    image: "https://ik.imagekit.io/dypkhqxip/banner1.1%20(1).png",
+    image: "/homehero.png",
     title: "Yemnest Banner 1",
   },
   {
@@ -68,19 +70,22 @@ export default function Hero() {
         {banners.map((banner, index) => {
           const isActive = index === currentIndex;
           return (
-            <a
+            <Link
               href="/shop"
               key={index}
               className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out cursor-pointer ${isActive ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
                 }`}
             >
               {/* Full Bleed Image (object-cover fills the aspect ratio naturally) */}
-              <img
+              <Image
                 src={banner.image}
                 alt={banner.title}
-                className="absolute inset-0 w-full h-full object-cover select-none animate-fade-in"
+                fill
+                priority={index === 0}
+                className="object-cover select-none animate-fade-in"
+                style={banner.image === "/homehero.png" ? { objectPosition: "center 5%" } : undefined}
               />
-            </a>
+            </Link>
           );
         })}
       </div>

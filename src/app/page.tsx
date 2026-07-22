@@ -1,6 +1,12 @@
 import Hero from "../../components/hero";
 import Collections from "../../components/collections";
-import PurityPromise from "../../components/purity";
+import dynamic from "next/dynamic";
+
+const PurityPromise = dynamic(() => import("../../components/purity"), {
+  ssr: true,
+});
+import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -16,9 +22,11 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 md:gap-8 items-center rounded-none">
           {/* Left Column: Brand Logo (takes 2 cols, aligned right on desktop) */}
           <div className="md:col-span-2 flex justify-center md:justify-end rounded-none">
-            <img
+            <Image
               src="https://ik.imagekit.io/dypkhqxip/yemnextols?updatedAt=1784063009812"
               alt="Yemnest Brand Logo"
+              width={480}
+              height={480}
               className="w-full max-w-[320px] sm:max-w-[420px] md:max-w-[480px] h-auto object-contain select-none rounded-none"
             />
           </div>
@@ -56,12 +64,12 @@ export default function Home() {
             <p className="text-sm sm:text-base font-normal text-zinc-100/90 leading-relaxed mb-8">
               At Yemnest, we trace our beans from the pristine canopy forest soils of the tropics to our Swiss refining atelier. We work exclusively with certified carbon-neutral farms to ensure each luxurious bar respects the soil it was born from.
             </p>
-            <a
-              href="#philosophy"
+            <Link
+              href="/story"
               className="inline-block bg-white text-[#106636] hover:bg-[#FAF9F6] text-xs uppercase tracking-widest py-3 px-8 rounded-none transition-colors shadow"
             >
               Read Our Story
-            </a>
+            </Link>
           </div>
         </div>
       </main>
@@ -70,9 +78,11 @@ export default function Home() {
       <footer className="bg-zinc-900 text-zinc-400 py-12 border-t border-zinc-800 rounded-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center sm:text-left rounded-none">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-6 border-b border-zinc-800 pb-8 mb-8 rounded-none">
-            <img
+            <Image
               src="https://ik.imagekit.io/dypkhqxip/yemnestnavbar"
               alt="Yemnest Logo"
+              width={200}
+              height={40}
               className="h-10 w-auto brightness-0 invert opacity-75 rounded-none"
             />
             <div className="text-center sm:text-right flex flex-col items-center sm:items-end gap-1">

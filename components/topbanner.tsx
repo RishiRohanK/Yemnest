@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 
 export default function TopBanner() {
   const pathname = usePathname();
@@ -99,12 +100,12 @@ export default function TopBanner() {
               for 15% off your first luxury selection.
             </span>
           </div>
-          <a
+          <Link
             href="/shop"
             className="flex-none rounded-none bg-white/10 px-4 py-1 text-xs font-normal text-white shadow-sm hover:bg-white/20 border border-white/10 transition-colors"
           >
             Explore Collection
-          </a>
+          </Link>
         </div>
         <div className="flex flex-1 justify-end">
           <button

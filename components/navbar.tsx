@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface UserState {
   name: string;
@@ -127,7 +128,7 @@ export default function Navbar() {
     };
   }, []);
 
-  const updateCartQuantity = (productId: string, increment: boolean) => {
+  const updateCartQuantity = useCallback((productId: string, increment: boolean) => {
     const updated = cartItems.map((item) => {
       if (item?.product?.id === productId) {
         const newQty = increment ? item.quantity + 1 : item.quantity - 1;
@@ -136,7 +137,6 @@ export default function Navbar() {
       return item;
     });
 
-    // Strip huge fields to prevent QuotaExceededError
     const lightweightUpdated = updated.map(item => ({
       ...item,
       product: { ...item.product, image1: "", image2: "", image3: "", image4: "", description: "" }
@@ -150,7 +150,7 @@ export default function Navbar() {
     const updatedCount = updated.reduce((sum, item) => sum + (item.quantity || 1), 0);
     localStorage.setItem("yemnest_cart_count", updatedCount.toString());
     window.dispatchEvent(new Event("yemnest_cart_updated"));
-  };
+  }, [cartItems]);
 
   const handlePlaceOrder = () => {
     setCheckoutError("");
@@ -168,90 +168,16 @@ export default function Navbar() {
       return;
     }
 
-    setCheckoutLoading(true);
-
-    const itemsSummary = cartItems.map((item) => ({
-      id: item.product.id,
-      name: item.product.name,
-      quantity: item.quantity,
-      price: item.product.price,
-    }));
-
-    const totalPrice = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-
-    // Save order in database first
-    fetch("/api/orders", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: user.email,
-        items: itemsSummary,
-        totalPrice,
-      }),
-    })
-      .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.error || "Checkout failed.");
-        }
-
-        const savedOrder = data.order;
-
-        // Compile WhatsApp Message
-        let messageText = `*New Order placed at Yemnest!*\n\n`;
-        messageText += `*Customer Info:*\n`;
-        messageText += `• Name: ${savedOrder.userName}\n`;
-        messageText += `• Email: ${savedOrder.userEmail}\n`;
-        messageText += `• Phone: ${savedOrder.phoneNumber}\n`;
-        messageText += `• Alt Phone: ${savedOrder.alternativeMobileNumber}\n\n`;
-        
-        messageText += `*Shipping Address:*\n`;
-        messageText += `• House No: ${savedOrder.houseNo}\n`;
-        messageText += `• Street: ${savedOrder.addressLine1}\n`;
-        messageText += `• Pin Code: ${savedOrder.pincode}\n\n`;
-
-        messageText += `*Products Ordered:*\n`;
-        cartItems.forEach((item) => {
-          messageText += `• ${item.product.name} (Qty: ${item.quantity}) - ₹${(item.product.price * item.quantity).toFixed(2)}\n`;
-        });
-        messageText += `\n*Total Amount:* ₹${totalPrice.toFixed(2)}\n\n`;
-        messageText += `Please confirm my order. Thank you!`;
-
-        // Redirect to WhatsApp link
-        const whatsappNumber = "919876543210"; // Placeholder shop WhatsApp number
-        const encodedText = encodeURIComponent(messageText);
-        const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedText}`;
-        
-        window.open(whatsappUrl, "_blank");
-
-        // Clear Cart
-        setCheckoutSuccess(true);
-        setCartItems([]);
-        localStorage.setItem("yemnest_cart_items", JSON.stringify([]));
-        localStorage.setItem("yemnest_cart_count", "0");
-        window.dispatchEvent(new Event("yemnest_cart_updated"));
-
-        setTimeout(() => {
-          setCheckoutSuccess(false);
-          setIsCartOpen(false);
-        }, 3000);
-      })
-      .catch((err) => {
-        setCheckoutError(err.message || "An error occurred.");
-      })
-      .finally(() => {
-        setCheckoutLoading(false);
-      });
+    setIsCartOpen(false);
+    router.push("/checkout");
   };
 
   if (pathname && pathname.startsWith("/admin")) return null;
 
-  const cartTotal = cartItems.reduce(
+  const cartTotal = useMemo(() => cartItems.reduce(
     (sum, item) => sum + Number(item?.product?.price || 0) * Number(item?.quantity || 1),
     0
-  );
+  ), [cartItems]);
 
   return (
     <nav className="relative sticky top-0 z-40 w-full bg-[#FEFEFD] border-b border-zinc-200/60 shadow-sm rounded-none">
@@ -259,41 +185,41 @@ export default function Navbar() {
         <div className="flex h-20 items-center justify-between">
           {/* Logo Section */}
           <div className="flex flex-1 justify-start">
-            <a href="/" className="flex items-center gap-2 group rounded-none">
+            <Link href="/" className="flex items-center gap-2 group rounded-none">
               <img
                 src="https://ik.imagekit.io/dypkhqxip/yemnestnavbar"
                 alt="Yemnest Logo"
                 className="h-14 w-auto object-contain transition-transform duration-300 group-hover:scale-105 rounded-none"
               />
-            </a>
+            </Link>
           </div>
 
           {/* Desktop Navigation Links */}
           <div className="hidden md:flex items-center justify-center space-x-10 flex-2">
-            <a
+            <Link
               href="/shop"
               className="text-sm font-normal tracking-wide text-zinc-800 hover:text-[#106636] transition-colors duration-200 rounded-none"
             >
               Shop
-            </a>
-            <a
-              href="#collections"
+            </Link>
+            <Link
+              href="/collections"
               className="text-sm font-normal tracking-wide text-zinc-800 hover:text-[#106636] transition-colors duration-200 rounded-none"
             >
               Collections
-            </a>
-            <a
-              href="#story"
+            </Link>
+            <Link
+              href="/story"
               className="text-sm font-normal tracking-wide text-zinc-800 hover:text-[#106636] transition-colors duration-200 rounded-none"
             >
               Our Story
-            </a>
-            <a
-              href="#journal"
+            </Link>
+            <Link
+              href="/journey"
               className="text-sm font-normal tracking-wide text-zinc-800 hover:text-[#106636] transition-colors duration-200 rounded-none"
             >
-              Cocoa Journal
-            </a>
+              Cocoa Journey
+            </Link>
           </div>
 
           {/* Desktop Right Utilities (Search, Profile, Cart) */}
@@ -406,7 +332,7 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <a
+              <Link
                 href="/signin"
                 className="text-zinc-600 hover:text-[#106636] p-1.5 rounded-none hover:bg-zinc-100/50 transition-all duration-200"
                 aria-label="Your Account"
@@ -426,7 +352,7 @@ export default function Navbar() {
                     d="M7 17.5c0-1.8 2.5-3 5-3s5 1.2 5 3"
                   />
                 </svg>
-              </a>
+              </Link>
             )}
 
             {/* Cart Icon */}
@@ -567,30 +493,30 @@ export default function Navbar() {
       {isMobileMenuOpen && (
         <div className="md:hidden border-t border-zinc-200/50 bg-[#FEFEFD] animate-fade-in rounded-none">
           <div className="space-y-1 px-4 pb-4 pt-3">
-            <a
+            <Link
               href="/shop"
               className="block rounded-none px-3 py-2 text-base font-normal tracking-wide text-zinc-800 hover:bg-zinc-100 hover:text-[#106636] transition-colors"
             >
               Shop
-            </a>
-            <a
-              href="#collections"
+            </Link>
+            <Link
+              href="/collections"
               className="block rounded-none px-3 py-2 text-base font-normal tracking-wide text-zinc-800 hover:bg-zinc-100 hover:text-[#106636] transition-colors"
             >
               Collections
-            </a>
-            <a
-              href="#story"
+            </Link>
+            <Link
+              href="/story"
               className="block rounded-none px-3 py-2 text-base font-normal tracking-wide text-zinc-800 hover:bg-zinc-100 hover:text-[#106636] transition-colors"
             >
               Our Story
-            </a>
-            <a
-              href="#journal"
+            </Link>
+            <Link
+              href="/journey"
               className="block rounded-none px-3 py-2 text-base font-normal tracking-wide text-zinc-800 hover:bg-zinc-100 hover:text-[#106636] transition-colors"
             >
-              Cocoa Journal
-            </a>
+              Cocoa Journey
+            </Link>
 
             {/* Mobile Actions divider */}
             <div className="border-t border-zinc-200/60 my-2 pt-2 flex flex-col gap-2 rounded-none">
@@ -699,7 +625,7 @@ export default function Navbar() {
                     )}
                   </div>
                 ) : (
-                  <a
+                  <Link
                     href="/signin"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center justify-center gap-2 text-zinc-600 hover:text-[#106636] px-3 py-2 rounded-none hover:bg-zinc-100"
@@ -710,7 +636,7 @@ export default function Navbar() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M7 17.5c0-1.8 2.5-3 5-3s5 1.2 5 3" />
                     </svg>
                     <span className="text-sm font-normal">Sign In</span>
-                  </a>
+                  </Link>
                 )}
               </div>
             </div>
@@ -752,13 +678,13 @@ export default function Navbar() {
               ) : cartItems.length === 0 ? (
                 <div className="text-center py-16">
                   <p className="text-xs text-zinc-400">Your cart is empty.</p>
-                  <a
+                  <Link
                     href="/shop"
                     onClick={() => setIsCartOpen(false)}
                     className="text-xs text-[#724D26] underline hover:text-[#5a3b1d] block mt-2"
                   >
                     Go back to Shop
-                  </a>
+                  </Link>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -838,10 +764,9 @@ export default function Navbar() {
 
                 <button
                   onClick={handlePlaceOrder}
-                  disabled={checkoutLoading}
-                  className="w-full py-3 bg-[#106636] hover:bg-[#0c4f29] text-white text-xs uppercase tracking-wider font-semibold rounded-none disabled:bg-zinc-400 transition-colors"
+                  className="w-full py-3 bg-[#106636] hover:bg-[#0c4f29] text-white text-xs uppercase tracking-wider font-semibold rounded-none transition-colors"
                 >
-                  {checkoutLoading ? "Processing Order..." : "Confirm & Order via WhatsApp"}
+                  Proceed to Checkout
                 </button>
               </div>
             )}

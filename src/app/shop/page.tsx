@@ -1,14 +1,9 @@
-import { prisma } from "@/lib/prisma";
+import { getProducts } from "@/lib/product-cache";
 import ShopClient from "./ShopClient";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export default async function ShopPage() {
-  const products = await prisma.product.findMany({
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-
-  return <ShopClient initialProducts={products} />;
+  const products = await getProducts();
+  return <ShopClient initialProducts={products as any} />;
 }

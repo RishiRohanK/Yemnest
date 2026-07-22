@@ -27,11 +27,21 @@ model Order {
   userEmail               String
   houseNo                 String
   addressLine1            String
+  city                    String   @default("")
+  state                   String   @default("")
   pincode                 String
   phoneNumber             String
   alternativeMobileNumber String
   items                   String
+  subTotal                Float    @default(0)
+  tax                     Float    @default(0)
+  shipping                Float    @default(0)
+  discount                Float    @default(0)
   totalPrice              Float
+  couponCode              String?
+  status                  String   @default("PENDING")
+  transactionId           String?
+  paymentScreenshot       String?
   createdAt               DateTime @default(now())
 }
 
