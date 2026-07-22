@@ -1,4 +1,5 @@
-"use client";
+import Image from "next/image";
+import Link from "next/link";
 
 export default function Collections() {
   const products = [
@@ -45,10 +46,12 @@ export default function Collections() {
             className="relative group overflow-hidden bg-zinc-100 rounded-none h-[420px] flex flex-col justify-end p-6 shadow-sm"
           >
             {/* Bright, clean full-bleed image (No opacity filters or black gradient shade overlay) */}
-            <img
+            <Image
               src={product.image}
               alt={product.name}
-              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 rounded-none select-none"
+              fill
+              sizes="(max-width: 768px) 100vw, 33vw"
+              className="object-cover group-hover:scale-105 transition-transform duration-500 rounded-none select-none"
             />
 
             {/* Float Label showing Name in normal state (No black shading / borders) */}
@@ -74,12 +77,12 @@ export default function Collections() {
                   {product.description}
                 </p>
               </div>
-              <button
-                type="button"
-                className="w-full text-center bg-zinc-900 text-white text-xs uppercase tracking-wider py-3.5 rounded-none hover:bg-zinc-800 transition-colors"
+              <Link
+                href="/shop"
+                className="block w-full text-center bg-zinc-900 text-white text-xs uppercase tracking-wider py-3.5 rounded-none hover:bg-zinc-800 transition-colors"
               >
                 Shop Now
-              </button>
+              </Link>
             </div>
           </div>
         ))}

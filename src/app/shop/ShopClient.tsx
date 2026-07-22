@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 interface Product {
   id: string;
@@ -13,12 +14,63 @@ interface Product {
   description: string;
   stockCount: number;
   image1: string;
-  image2: string;
-  image3: string;
-  image4: string;
+  image2?: string;
+  image3?: string;
+  image4?: string;
 }
 
 const CATEGORIES = ["All", "Kunafa Bars", "Gift Boxes", "Atelier Specialties"];
+
+const ProductCard = memo(({ product, onAddToCart, priority }: { product: Product, onAddToCart: (p: Product) => void, priority: boolean }) => (
+  <div className="bg-[#FEFEFD] border border-zinc-100 flex flex-col justify-between p-5 rounded-none shadow-sm group hover:shadow-md transition-shadow duration-200">
+    <Link href={`/shop/${product.id}`} className="cursor-pointer flex-1 flex flex-col justify-between">
+      <div>
+        <div className="w-full h-48 overflow-hidden bg-zinc-50 mb-4 relative">
+          <Image
+            src={product.image1}
+            alt={product.name}
+            fill
+            priority={priority}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-101 select-none"
+          />
+        </div>
+        <h3 className="text-base font-medium text-zinc-800 mb-0.5 group-hover:text-[#106636] transition-colors">
+          {product.name}
+        </h3>
+        <p className="text-[11px] text-[#724D26] mb-2 font-normal">{product.subLine}</p>
+        <p className="text-xs text-zinc-500 mb-4 line-clamp-2">{product.description}</p>
+      </div>
+      <div className="flex justify-between items-center mb-4 mt-auto">
+        <span className="text-xs text-zinc-400">Price</span>
+        <div className="flex items-center gap-2">
+          {product.cutoffPrice > product.price && (
+            <span className="text-xs text-zinc-400 line-through">₹{product.cutoffPrice.toFixed(2)}</span>
+          )}
+          <span className="text-sm font-semibold text-[#106636]">₹{product.price.toFixed(2)}</span>
+        </div>
+      </div>
+    </Link>
+    <div>
+      {product.stockCount > 0 ? (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddToCart(product);
+          }}
+          className="w-full py-2.5 bg-zinc-900 text-white text-xs font-normal rounded-none hover:bg-[#106636] transition-colors duration-200"
+        >
+          Add to cart
+        </button>
+      ) : (
+        <button disabled className="w-full py-2.5 bg-zinc-100 text-zinc-400 text-xs font-normal rounded-none cursor-not-allowed border border-zinc-200">
+          Out of stock
+        </button>
+      )}
+    </div>
+  </div>
+));
+ProductCard.displayName = "ProductCard";
 
 export default function ShopClient({ initialProducts }: { initialProducts: Product[] }) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
@@ -38,13 +90,16 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
     }
   }, []);
 
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = useCallback((product: Product) => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("yemnest_cart_items");
       let items: { product: Product; quantity: number }[] = [];
       if (stored) {
         try {
-          items = JSON.parse(stored);
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            items = parsed.filter((item: any) => item && item.product && typeof item.product.id === "string");
+          }
         } catch (e) {
           items = [];
         }
@@ -57,25 +112,45 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
         items.push({ product, quantity: 1 });
       }
 
-      localStorage.setItem("yemnest_cart_items", JSON.stringify(items));
+      // Strip huge fields (like base64 images) to prevent QuotaExceededError in localStorage
+      const lightweightItems = items.map(item => ({
+        ...item,
+        product: {
+          ...item.product,
+          image1: "",
+          image2: "",
+          image3: "",
+          image4: "",
+          description: ""
+        }
+      }));
+
+      try {
+        localStorage.setItem("yemnest_cart_items", JSON.stringify(lightweightItems));
+      } catch (err) {
+        console.error("Failed to save cart to localStorage:", err);
+      }
 
       // Calculate total count
-      const totalCount = items.reduce((sum, item) => sum + item.quantity, 0);
+      const totalCount = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
       localStorage.setItem("yemnest_cart_count", totalCount.toString());
 
-      // Dispatch global update event
+      // Dispatch global update event & open cart drawer
       window.dispatchEvent(new Event("yemnest_cart_updated"));
+      window.dispatchEvent(new Event("yemnest_open_cart"));
     }
-  };
+  }, []);
 
-  const filteredProducts = products.filter((product) => {
-    const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
-    const matchesSearch =
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.subLine.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
+      const matchesSearch =
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.subLine.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [products, selectedCategory, searchQuery]);
 
   return (
     <div className="flex-1 bg-[#FAF9F6] text-zinc-900 font-sans min-h-screen pb-24 relative">
@@ -138,72 +213,13 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProducts.map((product) => (
-                <div
+              {filteredProducts.map((product, index) => (
+                <ProductCard
                   key={product.id}
-                  className="bg-[#FEFEFD] border border-zinc-100 flex flex-col justify-between p-5 rounded-none shadow-sm group hover:shadow-md transition-shadow duration-200"
-                >
-                  {/* Clickable Card Body Area */}
-                  <Link
-                    href={`/shop/${product.id}`}
-                    className="cursor-pointer flex-1 flex flex-col justify-between"
-                  >
-                    <div>
-                      {/* Image container */}
-                      <div className="w-full h-48 overflow-hidden bg-zinc-50 mb-4 relative">
-                        <img
-                          src={product.image1}
-                          alt={product.name}
-                          loading="lazy"
-                          decoding="async"
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-101 select-none"
-                        />
-                      </div>
-                      
-                      {/* Title & SubLine (Sentence case) */}
-                      <h3 className="text-base font-medium text-zinc-800 mb-0.5 group-hover:text-[#106636] transition-colors">
-                        {product.name}
-                      </h3>
-                      <p className="text-[11px] text-[#724D26] mb-2 font-normal">
-                        {product.subLine}
-                      </p>
-                      <p className="text-xs text-zinc-500 mb-4 line-clamp-2">{product.description}</p>
-                    </div>
-
-                    {/* Price highlighted layout */}
-                    <div className="flex justify-between items-center mb-4 mt-auto">
-                      <span className="text-xs text-zinc-400">Price</span>
-                      <div className="flex items-center gap-2">
-                        {product.cutoffPrice > product.price && (
-                          <span className="text-xs text-zinc-400 line-through">₹{product.cutoffPrice.toFixed(2)}</span>
-                        )}
-                        <span className="text-sm font-semibold text-[#106636]">₹{product.price.toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </Link>
-
-                  {/* Add to Cart button outside clickable details container */}
-                  <div>
-                    {product.stockCount > 0 ? (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddToCart(product);
-                        }}
-                        className="w-full py-2.5 bg-zinc-900 text-white text-xs font-normal rounded-none hover:bg-[#106636] transition-colors duration-200"
-                      >
-                        Add to cart
-                      </button>
-                    ) : (
-                      <button
-                        disabled
-                        className="w-full py-2.5 bg-zinc-100 text-zinc-400 text-xs font-normal rounded-none cursor-not-allowed border border-zinc-200"
-                      >
-                        Out of stock
-                      </button>
-                    )}
-                  </div>
-                </div>
+                  product={product}
+                  onAddToCart={handleAddToCart}
+                  priority={index < 3}
+                />
               ))}
             </div>
           )}

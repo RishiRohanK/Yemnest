@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import ProductDetailClient from "./ProductDetailClient";
 import { notFound } from "next/navigation";
 
+export const revalidate = 60;
+
 export default async function ProductDetailPage({
   params,
 }: {
@@ -22,7 +24,6 @@ export default async function ProductDetailPage({
     notFound();
   }
 
-  // Convert Date objects to ISO string representation to make them fully serializable
   const serializedProduct = {
     ...product,
     createdAt: product.createdAt.toISOString(),
