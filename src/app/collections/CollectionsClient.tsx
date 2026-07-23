@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import gsap from "gsap";
@@ -24,6 +24,7 @@ interface Product {
   image2?: string;
   image3?: string;
   image4?: string;
+  dietary?: string;
 }
 
 export default function CollectionsClient({ initialProducts }: { initialProducts: Product[] }) {
@@ -42,6 +43,70 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
   const [quickViewQuantity, setQuickViewQuantity] = useState(1);
   const [cartToast, setCartToast] = useState(false);
   const [cartToastName, setCartToastName] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
+  const [addedCardIds, setAddedCardIds] = useState<string[]>([]);
+
+  // State for Wishlist
+  const [wishlist, setWishlist] = useState<Product[]>([]);
+
+  // Load Wishlist from LocalStorage
+  useEffect(() => {
+    const syncWishlist = () => {
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("yemnest_wishlist");
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              // Guard against old string-only wishlist
+              if (typeof parsed[0] === "string") {
+                setWishlist([]);
+                localStorage.removeItem("yemnest_wishlist");
+              } else {
+                setWishlist(parsed);
+              }
+            } else {
+              setWishlist([]);
+            }
+          } catch (e) {
+            console.error("Failed to parse wishlist from local storage", e);
+          }
+        } else {
+          setWishlist([]);
+        }
+      }
+    };
+
+    syncWishlist();
+
+    window.addEventListener("yemnest_wishlist_updated", syncWishlist);
+    return () => {
+      window.removeEventListener("yemnest_wishlist_updated", syncWishlist);
+    };
+  }, []);
+
+  const toggleWishlist = (product: Product, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    let updated;
+    
+    if (wishlist.some(item => item.id === product.id)) {
+      updated = wishlist.filter(item => item.id !== product.id);
+    } else {
+      updated = [...wishlist, product];
+    }
+    
+    setWishlist(updated);
+    
+    if (typeof window !== "undefined") {
+      const lightweightUpdated = updated.map(item => ({
+        ...item,
+        image1: "", image2: "", image3: "", image4: "", description: ""
+      }));
+      localStorage.setItem("yemnest_wishlist", JSON.stringify(lightweightUpdated));
+      window.dispatchEvent(new Event("yemnest_wishlist_updated"));
+    }
+  };
 
   const CATEGORIES = ["All", "Atelier Specialties", "Kunafa Bars", "Gift Boxes", "Limited Edition"];
   
@@ -192,7 +257,6 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
 
       window.dispatchEvent(new Event("yemnest_cart_updated"));
       
-      setQuickViewProduct(null); // Close modal
       setCartToastName(product.name);
       setCartToast(true);
       setTimeout(() => setCartToast(false), 3000);
@@ -358,27 +422,35 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
                   </div>
                 )}
 
-                <div className="product-card-reveal group relative flex flex-col h-full bg-[#FEFEFD] border border-transparent hover:border-zinc-200 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                <div className="product-card-reveal group relative flex flex-col h-full bg-transparent bg-[url('/chocolate-border-new2.jpg')] bg-[length:100%_100%] bg-no-repeat transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 rounded-xl">
                   
-                  {/* Badges */}
-                  <div className="absolute top-3 left-3 z-20 flex flex-col gap-2">
-                    {product.stockCount <= 5 && product.stockCount > 0 && (
-                      <span className="bg-[#724D26] text-white text-[9px] uppercase tracking-wider px-2 py-1 shadow-sm">Low Stock</span>
-                    )}
-                    {(product.cutoffPrice ?? 0) > product.price && (
-                      <span className="bg-[#106636] text-white text-[9px] uppercase tracking-wider px-2 py-1 shadow-sm">Sale</span>
-                    )}
-                  </div>
-                  
-                  {/* Wishlist Icon */}
-                  <button className="absolute top-3 right-3 z-20 text-zinc-400 hover:text-red-500 transition-colors bg-white/80 p-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 duration-300">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                  </button>
+                  {/* Inner wrapper to keep content inside the organic cream area of the image */}
+                  <div className="relative flex flex-col flex-1 pt-[12%] px-[8%] pb-[20%] bg-transparent">
+                    
+                    {/* Badges */}
+                    <div className="absolute top-2 left-2 z-20 flex flex-col gap-2">
+                      {product.stockCount <= 5 && product.stockCount > 0 && (
+                        <span className="bg-[#724D26] text-white text-[9px] uppercase tracking-wider px-2 py-1 shadow-sm rounded-sm">Low Stock</span>
+                      )}
+                      {(product.cutoffPrice ?? 0) > product.price && (
+                        <span className="bg-[#106636] text-white text-[9px] uppercase tracking-wider px-2 py-1 shadow-sm rounded-sm">Sale</span>
+                      )}
+                    </div>
+
+
+                    
+                    {/* Wishlist Icon */}
+                    <button 
+                      onClick={(e) => toggleWishlist(product, e)}
+                      className={`absolute top-2 right-2 z-20 transition-colors bg-white/90 p-1.5 rounded-full shadow-md opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:translate-y-2 lg:group-hover:translate-y-0 duration-300 ${wishlist.some(item => item.id === product.id) ? 'text-red-500' : 'text-zinc-400 hover:text-red-500'}`}
+                    >
+                      <svg className="w-4 h-4" fill={wishlist.some(item => item.id === product.id) ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                    </button>
 
                   {/* Image Container */}
-                  <div className="relative aspect-[4/5] w-full overflow-hidden bg-zinc-50 mb-4">
+                  <div className="relative aspect-[4/5] w-full overflow-hidden bg-zinc-50 mb-4 rounded-3xl shadow-sm border border-zinc-200/40">
                     <Link href={`/shop/${product.id}`}>
                       {/* Primary Image */}
                       <Image
@@ -410,26 +482,51 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
                   {/* Details */}
                   <div className="px-4 pb-5 flex flex-col flex-1">
                     <div className="flex justify-between items-start mb-1">
-                      <span className="text-[9px] text-zinc-400 uppercase tracking-widest">{product.category}</span>
+                      <span className="text-[10px] font-semibold text-[#8A6F54] uppercase tracking-widest">{product.category}</span>
                       <div className="flex text-yellow-500 text-[10px]">
                         ★ 4.8
                       </div>
                     </div>
                     
                     <Link href={`/shop/${product.id}`} className="group-hover:text-[#106636] transition-colors">
-                      <h3 className="text-base font-normal text-zinc-900 leading-snug">{product.name}</h3>
+                      <h3 className="text-base font-bold text-zinc-900 leading-snug">{product.name}</h3>
                     </Link>
                     
                     <p className="text-xs text-[#724D26] font-medium mt-1 mb-3 line-clamp-1">{product.subLine}</p>
                     
-                    <div className="mt-auto flex items-end justify-between pt-3 border-t border-zinc-100">
+                    <div className="mt-auto flex items-end justify-between pt-3 border-t border-zinc-100/50">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-[#106636]">₹{product.price.toFixed(2)}</span>
+                        <span className="text-2xl font-black text-[#106636]">₹{product.price.toFixed(2)}</span>
                         {(product.cutoffPrice ?? 0) > product.price && (
-                          <span className="text-xs text-zinc-400 line-through">₹{product.cutoffPrice!.toFixed(2)}</span>
+                          <span className="text-sm text-[#8A6F54] line-through font-medium">₹{product.cutoffPrice!.toFixed(2)}</span>
                         )}
                       </div>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleAddToCart(product, 1);
+                          setAddedCardIds(prev => [...prev, product.id]);
+                          setTimeout(() => {
+                            setAddedCardIds(prev => prev.filter(id => id !== product.id));
+                          }, 2000);
+                        }}
+                        disabled={product.stockCount === 0}
+                        className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${addedCardIds.includes(product.id) ? "bg-[#106636] text-white" : "bg-zinc-100 hover:bg-[#106636] text-zinc-900 hover:text-white"}`}
+                      >
+                        {addedCardIds.includes(product.id) ? (
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                          </svg>
+                        )}
+                      </button>
                     </div>
+                  </div>
                   </div>
                 </div>
               </div>
@@ -513,11 +610,15 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
 
                 <div className="flex gap-4">
                   <button 
-                    onClick={() => handleAddToCart(quickViewProduct, quickViewQuantity)}
+                    onClick={() => {
+                      handleAddToCart(quickViewProduct, quickViewQuantity);
+                      setIsAdding(true);
+                      setTimeout(() => setIsAdding(false), 2000);
+                    }}
                     disabled={quickViewProduct.stockCount === 0}
-                    className="flex-1 bg-[#106636] hover:bg-zinc-900 text-white text-xs uppercase tracking-widest py-3.5 transition-colors disabled:bg-zinc-300 disabled:cursor-not-allowed"
+                    className={`flex-1 text-white text-xs uppercase tracking-widest py-3.5 transition-colors disabled:bg-zinc-300 disabled:cursor-not-allowed ${isAdding ? "bg-[#106636]" : "bg-[#106636] hover:bg-zinc-900"}`}
                   >
-                    Add to Cart
+                    {isAdding ? "✓ Added" : "Add to Cart"}
                   </button>
                   <Link 
                     href={`/shop/${quickViewProduct.id}`}

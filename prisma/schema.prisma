@@ -6,6 +6,7 @@ datasource db {
   provider = "postgresql"
 }
 
+
 model User {
   id                      String   @id @default(uuid())
   email                   String   @unique
@@ -58,5 +59,6 @@ model Product {
   image3      String
   image4      String
   category    String   @default("Atelier Specialties")
+  dietary     String   @default("[\"Vegetarian\", \"Contains Nuts\"]")
   createdAt   DateTime @default(now())
 }

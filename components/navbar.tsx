@@ -47,6 +47,15 @@ export default function Navbar() {
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
 
+  // Global Wishlist Drawer State
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
+  const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
+  
+  // Toast state
+  const [cartToast, setCartToast] = useState(false);
+  const [cartToastName, setCartToastName] = useState("");
+  const [addedWishlistIds, setAddedWishlistIds] = useState<string[]>([]);
+
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
   // Sync cart and auth states from localStorage
@@ -86,6 +95,33 @@ export default function Navbar() {
       };
       window.addEventListener("yemnest_open_cart", handleOpenCartDrawer);
 
+      // Sync wishlist items list
+      const syncWishlistItems = () => {
+        const storedItems = localStorage.getItem("yemnest_wishlist");
+        if (storedItems) {
+          try {
+            const parsed = JSON.parse(storedItems);
+            if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] !== "string") {
+              setWishlistItems(parsed);
+            } else {
+              setWishlistItems([]);
+            }
+          } catch (e) {
+            setWishlistItems([]);
+          }
+        } else {
+          setWishlistItems([]);
+        }
+      };
+
+      syncWishlistItems();
+      window.addEventListener("yemnest_wishlist_updated", syncWishlistItems);
+
+      const handleOpenWishlistDrawer = () => {
+        setIsWishlistOpen(true);
+      };
+      window.addEventListener("yemnest_open_wishlist", handleOpenWishlistDrawer);
+
       // Auth sync
       const loadUser = () => {
         const storedUser = localStorage.getItem("yemnest_user");
@@ -107,6 +143,8 @@ export default function Navbar() {
         window.removeEventListener("yemnest_cart_updated", syncCartItems);
         window.removeEventListener("yemnest_open_cart", handleOpenCartDrawer);
         window.removeEventListener("yemnest_auth_updated", loadUser);
+        window.removeEventListener("yemnest_wishlist_updated", syncWishlistItems);
+        window.removeEventListener("yemnest_open_wishlist", handleOpenWishlistDrawer);
       };
     }
   }, []);
@@ -180,7 +218,7 @@ export default function Navbar() {
   ), [cartItems]);
 
   return (
-    <nav className="relative sticky top-0 z-40 w-full bg-[#FEFEFD] border-b border-zinc-200/60 shadow-sm rounded-none">
+    <nav className="relative sticky top-0 z-[100] w-full bg-[#FEFEFD] border-b border-zinc-200/60 shadow-sm rounded-none">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-20 items-center justify-between">
           {/* Logo Section */}
@@ -299,20 +337,23 @@ export default function Navbar() {
                     >
                       Change Password
                     </a>
-                    <a
-                      href="#wishlist"
-                      onClick={() => setIsProfileDropdownOpen(false)}
-                      className="block px-4 py-2 text-xs text-zinc-700 hover:bg-[#FAF9F6] hover:text-[#106636] transition-colors font-normal"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProfileDropdownOpen(false);
+                        window.dispatchEvent(new Event("yemnest_open_wishlist"));
+                      }}
+                      className="block w-full text-left px-4 py-2 text-xs text-zinc-700 hover:bg-[#FAF9F6] hover:text-[#106636] transition-colors font-normal"
                     >
                       My Wishlist
-                    </a>
-                    <a
-                      href="#orders"
+                    </button>
+                    <Link
+                      href="/orders"
                       onClick={() => setIsProfileDropdownOpen(false)}
                       className="block px-4 py-2 text-xs text-zinc-700 hover:bg-[#FAF9F6] hover:text-[#106636] transition-colors font-normal"
                     >
                       My Orders
-                    </a>
+                    </Link>
 
                     <div className="border-t border-zinc-100/80 mt-2 pt-2">
                       <button
@@ -355,6 +396,27 @@ export default function Navbar() {
               </Link>
             )}
 
+            {/* Wishlist Icon */}
+            <button
+              onClick={() => setIsWishlistOpen(true)}
+              type="button"
+              className="relative text-zinc-600 hover:text-red-500 p-1.5 rounded-none hover:bg-zinc-100/50 transition-all duration-200 focus:outline-none"
+              aria-label="Wishlist"
+            >
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-none bg-red-500 text-[9px] font-normal text-white">
+                {wishlistItems.length}
+              </span>
+            </button>
+
             {/* Cart Icon */}
             <button
               onClick={() => setIsCartOpen(true)}
@@ -384,6 +446,27 @@ export default function Navbar() {
 
           {/* Mobile Right Actions & Hamburger Button */}
           <div className="flex md:hidden items-center gap-1.5">
+            {/* Wishlist Badge directly on Mobile Header */}
+            <button
+              onClick={() => setIsWishlistOpen(true)}
+              type="button"
+              className="relative text-zinc-650 hover:text-red-500 p-2 focus:outline-none"
+              aria-label="Wishlist Mobile"
+            >
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-none bg-red-500 text-[8px] font-normal text-white">
+                {wishlistItems.length}
+              </span>
+            </button>
+
             {/* Real-time Cart Badge directly on Mobile Header */}
             <button
               onClick={() => setIsCartOpen(true)}
@@ -771,6 +854,117 @@ export default function Navbar() {
               </div>
             )}
 
+          </div>
+        </div>
+      )}
+      {/* Global Slide-out Wishlist Drawer */}
+      {isWishlistOpen && (
+        <div className="fixed inset-0 z-50 overflow-hidden bg-black/40 animate-fade-in flex justify-end">
+          <div className="w-screen max-w-md bg-[#FEFEFD] border-l border-zinc-200 p-6 flex flex-col justify-between shadow-2xl animate-slide-in relative">
+            
+            <div className="flex justify-between items-center border-b border-zinc-150 pb-4 mb-4">
+              <h2 className="text-lg font-light uppercase tracking-wider text-zinc-800">Your Wishlist</h2>
+              <button
+                onClick={() => setIsWishlistOpen(false)}
+                className="text-zinc-400 hover:text-zinc-700 p-1.5 focus:outline-none"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+              {wishlistItems.length === 0 ? (
+                <div className="text-center py-16">
+                  <p className="text-xs text-zinc-400">Your wishlist is empty.</p>
+                  <Link
+                    href="/shop"
+                    onClick={() => setIsWishlistOpen(false)}
+                    className="text-xs text-[#724D26] underline hover:text-[#5a3b1d] block mt-2"
+                  >
+                    Go back to Shop
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {wishlistItems.map((item) => (
+                    <div key={item.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-zinc-100 pb-3 gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-zinc-800">{item.name}</p>
+                        <p className="text-xs text-zinc-500 mt-1">
+                          Price: ₹{item.price ? Number(item.price).toFixed(2) : "0.00"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = wishlistItems.filter((i) => i.id !== item.id);
+                            localStorage.setItem("yemnest_wishlist", JSON.stringify(updated));
+                            window.dispatchEvent(new Event("yemnest_wishlist_updated"));
+                          }}
+                          className="text-xs text-zinc-400 hover:text-red-500 underline"
+                        >
+                          Remove
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // Add to cart
+                            const stored = localStorage.getItem("yemnest_cart_items");
+                            let items = [];
+                            if (stored) {
+                              try { items = JSON.parse(stored); } catch (e) {}
+                            }
+                            const existingIndex = items.findIndex((i: any) => i.product.id === item.id);
+                            if (existingIndex > -1) {
+                              items[existingIndex].quantity += 1;
+                            } else {
+                              items.push({ product: item, quantity: 1 });
+                            }
+                            
+                            const lightweightUpdated = items.map((i: any) => ({
+                              ...i, product: { ...i.product, image1: "", image2: "", image3: "", image4: "", description: "" }
+                            }));
+                            localStorage.setItem("yemnest_cart_items", JSON.stringify(lightweightUpdated));
+                            const updatedCount = items.reduce((sum: number, i: any) => sum + (i.quantity || 1), 0);
+                            localStorage.setItem("yemnest_cart_count", updatedCount.toString());
+                            window.dispatchEvent(new Event("yemnest_cart_updated"));
+                            
+                            // Show toast
+                            setCartToastName(item.name);
+                            setCartToast(true);
+                            setTimeout(() => setCartToast(false), 3000);
+                            
+                            setAddedWishlistIds(prev => [...prev, item.id]);
+                            setTimeout(() => {
+                              setAddedWishlistIds(prev => prev.filter(id => id !== item.id));
+                            }, 2000);
+                          }}
+                          className={`text-white text-xs px-4 py-2 uppercase tracking-wider transition-colors ${addedWishlistIds.includes(item.id) ? "bg-[#106636]" : "bg-[#106636] hover:bg-[#0c4f29]"}`}
+                        >
+                          {addedWishlistIds.includes(item.id) ? "✓ Added" : "Add to Cart"}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add to Cart Toast */}
+      {cartToast && (
+        <div className="fixed bottom-4 right-4 z-[110] bg-[#106636] text-white px-6 py-3 rounded-none shadow-lg animate-fade-in-up flex items-center gap-3">
+          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          <div>
+            <p className="font-medium text-sm">Added to Cart</p>
+            <p className="text-xs text-green-100">{cartToastName}</p>
           </div>
         </div>
       )}

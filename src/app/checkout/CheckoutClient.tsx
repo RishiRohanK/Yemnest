@@ -114,11 +114,6 @@ export default function CheckoutClient() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Checkout failed");
 
-      // Clear local cart
-      localStorage.setItem("yemnest_cart_items", JSON.stringify([]));
-      localStorage.setItem("yemnest_cart_count", "0");
-      window.dispatchEvent(new Event("yemnest_cart_updated"));
-
       router.push(`/checkout/payment/${data.orderId}`);
     } catch (err: any) {
       setError(err.message);

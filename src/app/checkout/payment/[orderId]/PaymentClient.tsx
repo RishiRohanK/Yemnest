@@ -47,6 +47,26 @@ export default function PaymentClient({ order }: { order: any }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to update payment");
 
+      // Clear purchased items from wishlist
+      try {
+        const storedWishlist = localStorage.getItem("yemnest_wishlist");
+        if (storedWishlist && order?.items) {
+          const wishlistItems = JSON.parse(storedWishlist);
+          const purchasedItems = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+          const purchasedIds = purchasedItems.map((i: any) => i.id || i.productId);
+          const newWishlist = wishlistItems.filter((item: any) => !purchasedIds.includes(item.id));
+          localStorage.setItem("yemnest_wishlist", JSON.stringify(newWishlist));
+          window.dispatchEvent(new Event("yemnest_wishlist_updated"));
+        }
+      } catch (err) {
+        console.error("Failed to clear wishlist items", err);
+      }
+
+      // Clear local cart
+      localStorage.setItem("yemnest_cart_items", JSON.stringify([]));
+      localStorage.setItem("yemnest_cart_count", "0");
+      window.dispatchEvent(new Event("yemnest_cart_updated"));
+
       router.push(`/checkout/success/${order.id}`);
     } catch (err: any) {
       setError(err.message);

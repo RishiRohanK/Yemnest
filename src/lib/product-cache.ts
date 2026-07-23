@@ -29,6 +29,7 @@ type Product = {
   image2: string;
   image3?: string;
   image4?: string;
+  dietary?: string;
 };
 
 let _cache: Product[] | null = null;
@@ -68,6 +69,7 @@ async function fetchFromDb(): Promise<Product[]> {
     image2: row.image2,
     image3: row.image3,
     image4: row.image4,
+    dietary: row.dietary,
   }));
 }
 

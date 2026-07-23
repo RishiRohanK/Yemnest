@@ -53,3 +53,27 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const email = searchParams.get("email");
+
+    if (!email) {
+      return NextResponse.json({ error: "Email is required." }, { status: 400 });
+    }
+
+    const orders = await prisma.order.findMany({
+      where: { userEmail: email },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json({ orders });
+  } catch (error: any) {
+    console.error("Fetch orders route error:", error);
+    return NextResponse.json(
+      { error: "An error occurred while fetching orders." },
+      { status: 500 }
+    );
+  }
+}

@@ -17,11 +17,14 @@ interface Product {
   image2?: string;
   image3?: string;
   image4?: string;
+  dietary?: string;
 }
 
 const CATEGORIES = ["All", "Kunafa Bars", "Gift Boxes", "Atelier Specialties"];
 
-const ProductCard = memo(({ product, onAddToCart, priority }: { product: Product, onAddToCart: (p: Product) => void, priority: boolean }) => (
+const ProductCard = memo(({ product, onAddToCart, priority }: { product: Product, onAddToCart: (p: Product) => void, priority: boolean }) => {
+  const [isAdded, setIsAdded] = useState(false);
+  return (
   <div className="bg-[#FEFEFD] border border-zinc-100 flex flex-col justify-between p-5 rounded-none shadow-sm group hover:shadow-md transition-shadow duration-200">
     <Link href={`/shop/${product.id}`} className="cursor-pointer flex-1 flex flex-col justify-between">
       <div>
@@ -34,6 +37,7 @@ const ProductCard = memo(({ product, onAddToCart, priority }: { product: Product
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover transition-transform duration-300 group-hover:scale-101 select-none"
           />
+
         </div>
         <h3 className="text-base font-medium text-zinc-800 mb-0.5 group-hover:text-[#106636] transition-colors">
           {product.name}
@@ -57,10 +61,12 @@ const ProductCard = memo(({ product, onAddToCart, priority }: { product: Product
           onClick={(e) => {
             e.stopPropagation();
             onAddToCart(product);
+            setIsAdded(true);
+            setTimeout(() => setIsAdded(false), 2000);
           }}
-          className="w-full py-2.5 bg-zinc-900 text-white text-xs font-normal rounded-none hover:bg-[#106636] transition-colors duration-200"
+          className={`w-full py-2.5 text-white text-xs font-normal rounded-none transition-colors duration-200 ${isAdded ? "bg-[#106636]" : "bg-zinc-900 hover:bg-[#106636]"}`}
         >
-          Add to cart
+          {isAdded ? "✓ Added" : "Add to cart"}
         </button>
       ) : (
         <button disabled className="w-full py-2.5 bg-zinc-100 text-zinc-400 text-xs font-normal rounded-none cursor-not-allowed border border-zinc-200">
@@ -69,7 +75,7 @@ const ProductCard = memo(({ product, onAddToCart, priority }: { product: Product
       )}
     </div>
   </div>
-));
+)});
 ProductCard.displayName = "ProductCard";
 
 export default function ShopClient({ initialProducts }: { initialProducts: Product[] }) {
