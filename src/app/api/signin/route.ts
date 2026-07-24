@@ -38,7 +38,17 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { message: "Authentication successful", userId: user.id, userName: user.name, userEmail: user.email },
+      { 
+        message: "Authentication successful", 
+        userId: user.id, 
+        userName: user.name, 
+        userEmail: user.email,
+        houseNo: user.houseNo,
+        addressLine1: user.addressLine1,
+        pincode: user.pincode,
+        phoneNumber: user.phoneNumber,
+        alternativeMobileNumber: user.alternativeMobileNumber
+      },
       { status: 200 }
     );
   } catch (error: any) {

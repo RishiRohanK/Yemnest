@@ -8,6 +8,7 @@ export default function SignUpPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [houseNo, setHouseNo] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
   const [pincode, setPincode] = useState("");
@@ -64,11 +65,11 @@ export default function SignUpPage() {
       !name ||
       !email ||
       !password ||
+      !confirmPassword ||
       !houseNo ||
       !addressLine1 ||
       !pincode ||
-      !phoneNumber ||
-      !alternativeMobileNumber
+      !phoneNumber
     ) {
       setError("Please fill in all fields.");
       return;
@@ -76,6 +77,11 @@ export default function SignUpPage() {
 
     if (!agreed) {
       setError("Please agree to the Terms and Privacy Policy.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
 
@@ -256,6 +262,29 @@ export default function SignUpPage() {
                   </div>
                 </div>
 
+                {/* Confirm Password */}
+                <div className="col-span-1">
+                  <label
+                    htmlFor="confirm-password"
+                    className="block text-[10px] uppercase tracking-wider font-normal text-zinc-500 mb-1.5"
+                  >
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="confirm-password"
+                      name="confirm-password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="block w-full px-3.5 py-2.5 bg-[#FAF9F6] border border-zinc-200/80 text-zinc-900 text-xs font-normal focus:outline-none focus:border-[#106636] focus:bg-white transition-colors duration-200 rounded-none"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </div>
+
                 {/* Primary Phone */}
                 <div className="col-span-1">
                   <label
@@ -336,7 +365,6 @@ export default function SignUpPage() {
                     id="alternativeMobileNumber"
                     name="alternativeMobileNumber"
                     type="tel"
-                    required
                     value={alternativeMobileNumber}
                     onChange={(e) => setAlternativeMobileNumber(e.target.value)}
                     className="block w-full px-3.5 py-2.5 bg-[#FAF9F6] border border-zinc-200/80 text-zinc-900 text-xs font-normal focus:outline-none focus:border-[#106636] focus:bg-white transition-colors duration-200 rounded-none"
@@ -416,7 +444,7 @@ export default function SignUpPage() {
               <div className="pt-2">
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || !agreed}
                   className="w-full flex justify-center py-3.5 px-4 bg-zinc-900 hover:bg-zinc-800 text-white font-normal uppercase tracking-wider text-xs transition-colors duration-200 disabled:bg-zinc-700 disabled:cursor-not-allowed rounded-none shadow-sm"
                 >
                   {isLoading ? (

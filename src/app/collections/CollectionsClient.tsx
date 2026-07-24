@@ -451,7 +451,7 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
 
                   {/* Image Container */}
                   <div className="relative aspect-[4/5] w-full overflow-hidden bg-zinc-50 mb-4 rounded-3xl shadow-sm border border-zinc-200/40">
-                    <Link href={`/shop/${product.id}`}>
+                    <Link href={`/shop/${product.id}`} className="relative block w-full h-full">
                       {/* Primary Image */}
                       <Image
                         src={product.image1}

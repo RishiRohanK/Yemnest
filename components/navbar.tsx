@@ -35,6 +35,7 @@ export default function Navbar() {
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [cartCount, setCartCount] = useState(0);
   const [user, setUser] = useState<UserState | null>(null);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
@@ -165,6 +166,15 @@ export default function Navbar() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      setIsSearchOpen(false);
+      router.push(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery("");
+    }
+  };
 
   const updateCartQuantity = useCallback((productId: string, increment: boolean) => {
     const updated = cartItems.map((item) => {
@@ -324,14 +334,14 @@ export default function Navbar() {
                     </div>
 
                     <a
-                      href="#profile"
+                      href="/profile"
                       onClick={() => setIsProfileDropdownOpen(false)}
                       className="block px-4 py-2 text-xs text-zinc-700 hover:bg-[#FAF9F6] hover:text-[#106636] transition-colors font-normal"
                     >
                       Profile
                     </a>
                     <a
-                      href="#change-password"
+                      href="/change-password"
                       onClick={() => setIsProfileDropdownOpen(false)}
                       className="block px-4 py-2 text-xs text-zinc-700 hover:bg-[#FAF9F6] hover:text-[#106636] transition-colors font-normal"
                     >
@@ -531,7 +541,7 @@ export default function Navbar() {
       {isSearchOpen && (
         <div className="absolute inset-x-0 top-full bg-[#FEFEFD] border-b border-zinc-200 shadow-md py-4 px-4 sm:px-6 lg:px-8 z-30 transition-all duration-200 rounded-none">
           <div className="mx-auto max-w-3xl flex items-center justify-between gap-4">
-            <div className="flex-1 flex items-center gap-3 bg-zinc-100/80 rounded-none px-4 py-2 border border-zinc-200/80 focus-within:border-[#106636] transition-colors">
+            <form onSubmit={handleSearch} className="flex-1 flex items-center gap-3 bg-zinc-100/80 rounded-none px-4 py-2 border border-zinc-200/80 focus-within:border-[#106636] transition-colors">
               <svg
                 className="h-5 w-5 text-zinc-500"
                 fill="none"
@@ -548,10 +558,12 @@ export default function Navbar() {
               <input
                 type="text"
                 placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-transparent border-none outline-none w-full text-zinc-800 text-sm font-normal placeholder-zinc-400 rounded-none"
                 autoFocus
               />
-            </div>
+            </form>
             <button
               type="button"
               onClick={() => setIsSearchOpen(false)}
@@ -665,14 +677,14 @@ export default function Navbar() {
                     {isMobileAccountOpen && (
                       <div className="w-full bg-zinc-50 border border-zinc-200/50 flex flex-col text-center items-center py-2 animate-fade-in space-y-2.5 mt-1 overflow-hidden">
                         <a
-                          href="#profile"
+                          href="/profile"
                           onClick={() => setIsMobileMenuOpen(false)}
                           className="block w-full py-1 text-xs text-zinc-650 hover:text-[#106636] transition-colors"
                         >
                           Profile
                         </a>
                         <a
-                          href="#change-password"
+                          href="/change-password"
                           onClick={() => setIsMobileMenuOpen(false)}
                           className="block w-full py-1 text-xs text-zinc-650 hover:text-[#106636] transition-colors"
                         >
@@ -729,8 +741,11 @@ export default function Navbar() {
 
       {/* Global Slide-out Cart Drawer */}
       {isCartOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden bg-black/40 animate-fade-in flex justify-end">
-          <div className="w-screen max-w-md bg-[#FEFEFD] border-l border-zinc-200 p-6 flex flex-col justify-between shadow-2xl animate-slide-in relative">
+        <div className="fixed inset-0 z-50 overflow-hidden bg-black/40 animate-fade-in flex justify-end" onClick={() => setIsCartOpen(false)}>
+          <div 
+            className="w-screen max-w-md bg-[#FEFEFD] border-l border-zinc-200 p-6 flex flex-col justify-between shadow-2xl animate-slide-in relative"
+            onClick={(e) => e.stopPropagation()}
+          >
             
             {/* Drawer Header */}
             <div className="flex justify-between items-center border-b border-zinc-150 pb-4 mb-4">
@@ -859,8 +874,11 @@ export default function Navbar() {
       )}
       {/* Global Slide-out Wishlist Drawer */}
       {isWishlistOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden bg-black/40 animate-fade-in flex justify-end">
-          <div className="w-screen max-w-md bg-[#FEFEFD] border-l border-zinc-200 p-6 flex flex-col justify-between shadow-2xl animate-slide-in relative">
+        <div className="fixed inset-0 z-50 overflow-hidden bg-black/40 animate-fade-in flex justify-end" onClick={() => setIsWishlistOpen(false)}>
+          <div 
+            className="w-screen max-w-md bg-[#FEFEFD] border-l border-zinc-200 p-6 flex flex-col justify-between shadow-2xl animate-slide-in relative"
+            onClick={(e) => e.stopPropagation()}
+          >
             
             <div className="flex justify-between items-center border-b border-zinc-150 pb-4 mb-4">
               <h2 className="text-lg font-light uppercase tracking-wider text-zinc-800">Your Wishlist</h2>

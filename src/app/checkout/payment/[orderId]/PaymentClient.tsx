@@ -33,6 +33,9 @@ export default function PaymentClient({ order }: { order: any }) {
     setLoading(true);
     setError("");
 
+    // Open tab synchronously to avoid popup blocker
+    const whatsappTab = window.open('about:blank', '_blank');
+
     try {
       const res = await fetch("/api/checkout/payment", {
         method: "POST",
@@ -67,8 +70,36 @@ export default function PaymentClient({ order }: { order: any }) {
       localStorage.setItem("yemnest_cart_count", "0");
       window.dispatchEvent(new Event("yemnest_cart_updated"));
 
+      // Construct WhatsApp Message
+      let itemsList: any[] = [];
+      try { itemsList = typeof order.items === 'string' ? JSON.parse(order.items) : order.items; } catch (e) {}
+
+      let messageText = `*New Order placed at Yemnest!*\n\n`;
+      messageText += `*Order ID:* ${order.id}\n`;
+      messageText += `*Transaction ID:* ${transactionId}\n\n`;
+      messageText += `*Customer Info:*\n`;
+      messageText += `• Name: ${order.userName}\n`;
+      messageText += `• Email: ${order.userEmail}\n`;
+      messageText += `• Phone: ${order.phoneNumber}\n\n`;
+      messageText += `*Products Ordered:*\n`;
+      itemsList.forEach((item) => {
+        messageText += `• ${item.name} (Qty: ${item.quantity}) - ₹${(item.price * item.quantity).toFixed(2)}\n`;
+      });
+      messageText += `\n*Total Paid:* ₹${order.totalPrice.toFixed(2)}\n\n`;
+      messageText += `Please verify this payment and confirm my order!`;
+
+      const whatsappNumber = "919876543210"; // Placeholder shop WhatsApp number
+      const encodedText = encodeURIComponent(messageText);
+      const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedText}`;
+      
+      // Navigate the already opened tab to WhatsApp
+      if (whatsappTab) {
+        whatsappTab.location.href = whatsappUrl;
+      }
+
       router.push(`/checkout/success/${order.id}`);
     } catch (err: any) {
+      if (whatsappTab) whatsappTab.close();
       setError(err.message);
       setLoading(false);
     }
@@ -125,13 +156,35 @@ export default function PaymentClient({ order }: { order: any }) {
               </div>
 
               <h4 className="text-xs text-zinc-400 uppercase tracking-widest mb-4">Or Pay via App</h4>
-              <div className="flex gap-4">
-                <a href={upiLink} className="flex-1 flex flex-col items-center gap-2 p-3 border border-zinc-200 hover:border-[#106636] transition-colors rounded-lg">
-                  <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-green-500">GPay</span>
+              <div className="grid grid-cols-2 gap-3 mb-6 w-full">
+                <a href={`tez://upi/pay?pa=${merchantUpiId}&pn=${encodeURIComponent(merchantName)}&am=${amountStr}&cu=INR`} className="flex flex-col items-center justify-center gap-2 p-3 border border-zinc-200 hover:border-[#106636] transition-colors rounded-lg">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/f/f2/Google_Pay_Logo.svg" alt="GPay" className="h-5" />
                 </a>
-                <a href={upiLink} className="flex-1 flex flex-col items-center gap-2 p-3 border border-zinc-200 hover:border-[#106636] transition-colors rounded-lg">
-                  <span className="text-xl font-bold text-purple-600">PhPe</span>
+                <a href={`phonepe://pay?pa=${merchantUpiId}&pn=${encodeURIComponent(merchantName)}&am=${amountStr}&cu=INR`} className="flex flex-col items-center justify-center gap-2 p-3 border border-zinc-200 hover:border-[#106636] transition-colors rounded-lg">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/7/71/PhonePe_Logo.svg" alt="PhonePe" className="h-6" />
                 </a>
+                <a href={`paytmmp://pay?pa=${merchantUpiId}&pn=${encodeURIComponent(merchantName)}&am=${amountStr}&cu=INR`} className="flex flex-col items-center justify-center gap-2 p-3 border border-zinc-200 hover:border-[#106636] transition-colors rounded-lg">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/2/24/Paytm_Logo_%28standalone%29.svg" alt="Paytm" className="h-4" />
+                </a>
+                <a href={upiLink} className="flex flex-col items-center justify-center gap-2 p-3 border border-zinc-200 hover:border-[#106636] transition-colors rounded-lg">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" alt="Other UPI" className="h-5" />
+                </a>
+              </div>
+
+              <h4 className="text-xs text-zinc-400 uppercase tracking-widest mb-4">Other Methods</h4>
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <button type="button" onClick={() => alert("Netbanking gateway integration is coming soon. Please use UPI for now.")} className="flex items-center justify-center gap-2 p-3 border border-zinc-200 hover:bg-zinc-50 transition-colors rounded-lg text-xs font-semibold text-zinc-600">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                  </svg>
+                  Netbanking
+                </button>
+                <button type="button" onClick={() => alert("Credit Card gateway integration is coming soon. Please use UPI for now.")} className="flex items-center justify-center gap-2 p-3 border border-zinc-200 hover:bg-zinc-50 transition-colors rounded-lg text-xs font-semibold text-zinc-600">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                  Credit Card
+                </button>
               </div>
             </div>
 
@@ -142,10 +195,11 @@ export default function PaymentClient({ order }: { order: any }) {
                 Once you have completed the payment via the QR code or UPI link, please click "I have completed payment" below. Providing the Transaction ID helps us confirm your order instantly.
               </p>
 
-              <form onSubmit={handleSubmit} className="space-y-6 mt-auto">
+              <form onSubmit={handleSubmit} className="space-y-6 mt-6 md:mt-auto">
                 <div>
-                  <label className="block text-xs text-zinc-500 mb-2">UPI Reference Number / Transaction ID (Optional)</label>
+                  <label className="block text-xs text-zinc-500 mb-2">UPI Reference Number / Transaction ID <span className="text-red-500">*</span></label>
                   <input 
+                    required
                     name="transactionId" 
                     value={transactionId} 
                     onChange={(e) => setTransactionId(e.target.value)} 

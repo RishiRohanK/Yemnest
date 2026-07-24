@@ -56,12 +56,39 @@ export default function CheckoutClient() {
   const shipping = subTotal > 2000 ? 0 : 150; 
   const total = subTotal + tax + shipping - discount;
 
-  const handleApplyCoupon = () => {
-    if (couponCode.toUpperCase() === "YEMNEST10") {
+  const handleApplyCoupon = async () => {
+    setError("");
+    if (couponCode.toUpperCase() === "FINESTCOCOA") {
+      if (!formData.email) {
+        setDiscount(0);
+        setError("Please enter your email address first to validate this coupon.");
+        return;
+      }
+      try {
+        const res = await fetch("/api/checkout/validate-coupon", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            couponCode: couponCode.toUpperCase(),
+            email: formData.email,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setDiscount(0);
+          setError(data.error || "Invalid coupon.");
+        } else {
+          setDiscount(subTotal * data.discountPercentage);
+        }
+      } catch (err) {
+        setDiscount(0);
+        setError("Failed to validate coupon");
+      }
+    } else if (couponCode.toUpperCase() === "YEMNEST10") {
       setDiscount(subTotal * 0.1);
     } else {
       setDiscount(0);
-      alert("Invalid coupon code");
+      setError("Invalid coupon code");
     }
   };
 

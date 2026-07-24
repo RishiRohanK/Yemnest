@@ -24,8 +24,7 @@ export async function POST(request: Request) {
       !houseNo ||
       !addressLine1 ||
       !pincode ||
-      !phoneNumber ||
-      !alternativeMobileNumber
+      !phoneNumber
     ) {
       return NextResponse.json(
         { error: "Please fill in all required fields." },

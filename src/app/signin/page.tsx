@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -36,7 +37,16 @@ export default function SignInPage() {
           throw new Error(data.error || "Login failed.");
         }
         setSuccess(true);
-        localStorage.setItem("yemnest_user", JSON.stringify({ name: data.userName, id: data.userId, email: data.userEmail }));
+        localStorage.setItem("yemnest_user", JSON.stringify({ 
+          name: data.userName, 
+          id: data.userId, 
+          email: data.userEmail,
+          houseNo: data.houseNo,
+          addressLine1: data.addressLine1,
+          pincode: data.pincode,
+          phoneNumber: data.phoneNumber,
+          alternativeMobileNumber: data.alternativeMobileNumber
+        }));
         window.dispatchEvent(new Event("yemnest_auth_updated"));
         setTimeout(() => {
           router.push("/shop");
@@ -117,12 +127,12 @@ export default function SignInPage() {
                   >
                     Password
                   </label>
-                  <a
-                    href="#forgot"
+                  <Link
+                    href="/forgot-password"
                     className="text-xs text-[#724D26] hover:text-[#5a3b1d] transition-colors"
                   >
                     Forgot Password?
-                  </a>
+                  </Link>
                 </div>
                 <div className="relative">
                   <input

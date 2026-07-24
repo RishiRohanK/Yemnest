@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 
 interface Product {
@@ -24,63 +25,120 @@ const CATEGORIES = ["All", "Kunafa Bars", "Gift Boxes", "Atelier Specialties"];
 
 const ProductCard = memo(({ product, onAddToCart, priority }: { product: Product, onAddToCart: (p: Product) => void, priority: boolean }) => {
   const [isAdded, setIsAdded] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false); // Can add actual wishlist logic later
+  
   return (
-  <div className="bg-[#FEFEFD] border border-zinc-100 flex flex-col justify-between p-5 rounded-none shadow-sm group hover:shadow-md transition-shadow duration-200">
-    <Link href={`/shop/${product.id}`} className="cursor-pointer flex-1 flex flex-col justify-between">
-      <div>
-        <div className="w-full h-48 overflow-hidden bg-zinc-50 mb-4 relative">
-          <Image
-            src={product.image1}
-            alt={product.name}
-            fill
-            priority={priority}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-101 select-none"
-          />
-
-        </div>
-        <h3 className="text-base font-medium text-zinc-800 mb-0.5 group-hover:text-[#106636] transition-colors">
-          {product.name}
-        </h3>
-        <p className="text-[11px] text-[#724D26] mb-2 font-normal">{product.subLine}</p>
-        <p className="text-xs text-zinc-500 mb-4 line-clamp-2">{product.description}</p>
-      </div>
-      <div className="flex justify-between items-center mb-4 mt-auto">
-        <span className="text-xs text-zinc-400">Price</span>
-        <div className="flex items-center gap-2">
-          {product.cutoffPrice > product.price && (
-            <span className="text-xs text-zinc-400 line-through">₹{product.cutoffPrice.toFixed(2)}</span>
+    <div className="group relative flex flex-col h-full bg-transparent bg-[url('/chocolate-border-new2.jpg')] bg-[length:100%_100%] bg-no-repeat transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 rounded-xl">
+      {/* Inner wrapper to keep content inside the organic cream area of the image */}
+      <div className="relative flex flex-col flex-1 pt-[12%] px-[8%] pb-[20%] bg-transparent">
+        
+        {/* Badges */}
+        <div className="absolute top-2 left-2 z-20 flex flex-col gap-2">
+          {product.stockCount <= 5 && product.stockCount > 0 && (
+            <span className="bg-[#724D26] text-white text-[9px] uppercase tracking-wider px-2 py-1 shadow-sm rounded-sm">Low Stock</span>
           )}
-          <span className="text-sm font-semibold text-[#106636]">₹{product.price.toFixed(2)}</span>
+          {(product.cutoffPrice ?? 0) > product.price && (
+            <span className="bg-[#106636] text-white text-[9px] uppercase tracking-wider px-2 py-1 shadow-sm rounded-sm">Sale</span>
+          )}
+        </div>
+
+        {/* Wishlist Icon */}
+        <button 
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsWishlisted(!isWishlisted);
+          }}
+          className={`absolute top-2 right-2 z-20 transition-colors bg-white/90 p-1.5 rounded-full shadow-md opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:translate-y-2 lg:group-hover:translate-y-0 duration-300 ${isWishlisted ? 'text-red-500' : 'text-zinc-400 hover:text-red-500'}`}
+        >
+          <svg className="w-4 h-4" fill={isWishlisted ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          </svg>
+        </button>
+
+        {/* Image Container */}
+        <div className="relative aspect-[4/5] w-full overflow-hidden bg-zinc-50 mb-4 rounded-3xl shadow-sm border border-zinc-200/40">
+          <Link href={`/shop/${product.id}`} className="relative block w-full h-full">
+            {/* Primary Image */}
+            <Image
+              src={product.image1}
+              alt={product.name}
+              fill
+              priority={priority}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover transition-opacity duration-500 z-10 group-hover:opacity-0"
+            />
+            {/* Hover Image (Fallback to image1 if image2 is missing) */}
+            <Image
+              src={product.image2 || product.image1}
+              alt={product.name + " hover"}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover transition-transform duration-700 scale-105 group-hover:scale-100 z-0"
+            />
+          </Link>
+        </div>
+
+        {/* Details */}
+        <div className="px-4 pb-5 flex flex-col flex-1">
+          <div className="flex justify-between items-start mb-1">
+            <span className="text-[10px] font-semibold text-[#8A6F54] uppercase tracking-widest">{product.category}</span>
+            <div className="flex text-yellow-500 text-[10px]">
+              ★ 4.8
+            </div>
+          </div>
+          
+          <Link href={`/shop/${product.id}`} className="group-hover:text-[#106636] transition-colors">
+            <h3 className="text-base font-bold text-zinc-900 leading-snug">{product.name}</h3>
+          </Link>
+          
+          <p className="text-xs text-[#724D26] font-medium mt-1 mb-3 line-clamp-1">{product.subLine}</p>
+          
+          <div className="mt-auto flex items-end justify-between pt-3 border-t border-zinc-100/50">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-black text-[#106636]">₹{product.price.toFixed(2)}</span>
+              {(product.cutoffPrice ?? 0) > product.price && (
+                <span className="text-sm text-[#8A6F54] line-through font-medium">₹{product.cutoffPrice!.toFixed(2)}</span>
+              )}
+            </div>
+            
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onAddToCart(product);
+                setIsAdded(true);
+                setTimeout(() => setIsAdded(false), 2000);
+              }}
+              disabled={product.stockCount === 0}
+              className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${isAdded ? "bg-[#106636] text-white" : "bg-zinc-100 hover:bg-[#106636] text-zinc-900 hover:text-white"}`}
+            >
+              {isAdded ? (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
       </div>
-    </Link>
-    <div>
-      {product.stockCount > 0 ? (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddToCart(product);
-            setIsAdded(true);
-            setTimeout(() => setIsAdded(false), 2000);
-          }}
-          className={`w-full py-2.5 text-white text-xs font-normal rounded-none transition-colors duration-200 ${isAdded ? "bg-[#106636]" : "bg-zinc-900 hover:bg-[#106636]"}`}
-        >
-          {isAdded ? "✓ Added" : "Add to cart"}
-        </button>
-      ) : (
-        <button disabled className="w-full py-2.5 bg-zinc-100 text-zinc-400 text-xs font-normal rounded-none cursor-not-allowed border border-zinc-200">
-          Out of stock
-        </button>
-      )}
     </div>
-  </div>
-)});
+  );
+});
 ProductCard.displayName = "ProductCard";
 
 export default function ShopClient({ initialProducts }: { initialProducts: Product[] }) {
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
+
+  useEffect(() => {
+    setSearchQuery(searchParams.get("search") || "");
+  }, [searchParams]);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [cartCount, setCartCount] = useState(0);
 
