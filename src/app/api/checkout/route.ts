@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
 
 export async function POST(req: Request) {
   try {
@@ -51,6 +52,12 @@ export async function POST(req: Request) {
         status: "PENDING"
       }
     });
+
+    // Send WhatsApp order confirmation asynchronously
+    sendWhatsAppMessage({
+      to: phoneNumber, // Assumes the user provided their phone number in the checkout form
+      body: `Hello ${userName}, thank you for your order!\n\nYour order (ID: *${newOrder.id}*) has been placed successfully.\nTotal Price: ₹${totalPrice}\n\nWe will notify you once your order is shipped.\n\n- Yemnest Team`
+    }).catch(console.error);
 
     return NextResponse.json({ success: true, orderId: newOrder.id }, { status: 201 });
   } catch (error: any) {

@@ -23,9 +23,8 @@ interface Product {
 
 const CATEGORIES = ["All", "Kunafa Bars", "Gift Boxes", "Atelier Specialties"];
 
-const ProductCard = memo(({ product, onAddToCart, priority }: { product: Product, onAddToCart: (p: Product) => void, priority: boolean }) => {
+const ProductCard = memo(({ product, onAddToCart, priority, isWishlisted, onToggleWishlist }: { product: Product, onAddToCart: (p: Product) => void, priority: boolean, isWishlisted: boolean, onToggleWishlist: (p: Product) => void }) => {
   const [isAdded, setIsAdded] = useState(false);
-  const [isWishlisted, setIsWishlisted] = useState(false); // Can add actual wishlist logic later
   
   return (
     <div className="group relative flex flex-col h-full bg-transparent bg-[url('/chocolate-border-new2.jpg')] bg-[length:100%_100%] bg-no-repeat transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 rounded-xl">
@@ -47,7 +46,7 @@ const ProductCard = memo(({ product, onAddToCart, priority }: { product: Product
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            setIsWishlisted(!isWishlisted);
+            onToggleWishlist(product);
           }}
           className={`absolute top-2 right-2 z-20 transition-colors bg-white/90 p-1.5 rounded-full shadow-md opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:translate-y-2 lg:group-hover:translate-y-0 duration-300 ${isWishlisted ? 'text-red-500' : 'text-zinc-400 hover:text-red-500'}`}
         >
@@ -141,6 +140,7 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
   }, [searchParams]);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [cartCount, setCartCount] = useState(0);
+  const [wishlist, setWishlist] = useState<Product[]>([]);
 
   // Listen to cart updates
   useEffect(() => {
@@ -153,6 +153,57 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
       return () => window.removeEventListener("yemnest_cart_updated", handleCartUpdate);
     }
   }, []);
+
+  // Listen to wishlist updates
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const syncWishlist = () => {
+        try {
+          const stored = localStorage.getItem("yemnest_wishlist");
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+              if (parsed.length > 0 && typeof parsed[0] === 'string') {
+                setWishlist([]);
+                localStorage.removeItem("yemnest_wishlist");
+              } else {
+                setWishlist(parsed);
+              }
+            } else {
+              setWishlist([]);
+            }
+          } else {
+            setWishlist([]);
+          }
+        } catch (e) {
+          console.error("Failed to parse wishlist from local storage", e);
+          setWishlist([]);
+        }
+      };
+      syncWishlist();
+      window.addEventListener("yemnest_wishlist_updated", syncWishlist);
+      return () => window.removeEventListener("yemnest_wishlist_updated", syncWishlist);
+    }
+  }, []);
+
+  const toggleWishlist = useCallback((product: Product) => {
+    let updated: Product[];
+    if (wishlist.some(item => item.id === product.id)) {
+      updated = wishlist.filter(item => item.id !== product.id);
+    } else {
+      updated = [...wishlist, product];
+    }
+    setWishlist(updated);
+    
+    if (typeof window !== "undefined") {
+      const lightweightUpdated = updated.map(item => ({
+        ...item,
+        image1: "", image2: "", image3: "", image4: "", description: ""
+      }));
+      localStorage.setItem("yemnest_wishlist", JSON.stringify(lightweightUpdated));
+      window.dispatchEvent(new Event("yemnest_wishlist_updated"));
+    }
+  }, [wishlist]);
 
   const handleAddToCart = useCallback((product: Product) => {
     if (typeof window !== "undefined") {
@@ -283,6 +334,8 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
                   product={product}
                   onAddToCart={handleAddToCart}
                   priority={index < 3}
+                  isWishlisted={wishlist.some(w => w.id === product.id)}
+                  onToggleWishlist={toggleWishlist}
                 />
               ))}
             </div>
