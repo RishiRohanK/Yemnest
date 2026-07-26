@@ -1,6 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { Toaster, toast } from "react-hot-toast";
 
 interface User {
   id: string;
@@ -24,8 +34,33 @@ interface Order {
   pincode: string;
   phoneNumber: string;
   alternativeMobileNumber: string;
-  items: string; // JSON serialized string of items
+  items: string;
   totalPrice: number;
+  status: string;
+  createdAt: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  subLine: string;
+  price: number;
+  cutoffPrice: number;
+  description: string;
+  stockCount: number;
+  image1: string;
+  image2: string;
+  image3: string;
+  image4: string;
+  category: string;
+}
+
+interface Coupon {
+  id: string;
+  code: string;
+  discountPercentage: number;
+  isActive: boolean;
+  uses: number;
   createdAt: string;
 }
 
@@ -33,6 +68,8 @@ interface Metrics {
   totalUsers: number;
   totalOrders: number;
   totalRevenue: number;
+  salesData: { name: string; revenue: number }[];
+  lowStockProducts: { id: string; name: string; stockCount: number; category: string }[];
 }
 
 interface ImageDropZoneProps {
@@ -58,7 +95,7 @@ function ImageDropZone({ image, setImage, label }: ImageDropZoneProps) {
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
-      alert("Please select or drop an image file.");
+      toast.error("Please select an image file.");
       return;
     }
     const reader = new FileReader();
@@ -153,13 +190,35 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Dashboard Data State
-  const [activeTab, setActiveTab] = useState<"overview" | "orders" | "users" | "add-product">("overview");
-  const [metrics, setMetrics] = useState<Metrics>({ totalUsers: 0, totalOrders: 0, totalRevenue: 0 });
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "orders" | "users" | "products" | "coupons"
+  >("overview");
+  
+  const [metrics, setMetrics] = useState<Metrics>({ 
+    totalUsers: 0, 
+    totalOrders: 0, 
+    totalRevenue: 0,
+    salesData: [],
+    lowStockProducts: []
+  });
   const [users, setUsers] = useState<User[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  
   const [dashboardLoading, setDashboardLoading] = useState(false);
 
-  // Add Product Form State
+  // Order Filters & Bulk State
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [timeFilter, setTimeFilter] = useState("ALL");
+  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [isUpdatingBulk, setIsUpdatingBulk] = useState(false);
+
+  // Add/Edit Product Form State
+  const [isEditingProduct, setIsEditingProduct] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  
   const [prodName, setProdName] = useState("");
   const [prodSubLine, setProdSubLine] = useState("");
   const [prodPrice, setProdPrice] = useState("");
@@ -171,8 +230,10 @@ export default function AdminPage() {
   const [prodImage2, setProdImage2] = useState("");
   const [prodImage3, setProdImage3] = useState("");
   const [prodImage4, setProdImage4] = useState("");
-  const [productError, setProductError] = useState("");
-  const [productSuccess, setProductSuccess] = useState(false);
+  
+  // Coupon Form State
+  const [couponCode, setCouponCode] = useState("");
+  const [couponDiscount, setCouponDiscount] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -187,22 +248,80 @@ export default function AdminPage() {
     }
   }, [isAdminLoggedIn]);
 
-  const fetchDashboardData = () => {
+  // Real-time polling for new orders
+  const previousOrderCountRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!isAdminLoggedIn) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/admin/metrics", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          const currentCount = data.metrics.totalOrders;
+
+          // If this is the first fetch by the poller, just set the baseline
+          if (previousOrderCountRef.current === null) {
+            previousOrderCountRef.current = currentCount;
+            return;
+          }
+
+          // If count increased, we have a new order!
+          if (currentCount > previousOrderCountRef.current) {
+            const difference = currentCount - previousOrderCountRef.current;
+            toast.success(`🚨 ${difference} New Order(s) Received!`, { 
+              duration: 8000,
+              icon: '📦',
+              style: { border: '1px solid #106636', padding: '16px', color: '#106636', fontWeight: 'bold' }
+            });
+            
+            previousOrderCountRef.current = currentCount;
+            
+            // Update dashboard state automatically
+            setMetrics(data.metrics);
+            setOrders(data.orders);
+            setUsers(data.users);
+          }
+        }
+      } catch (err) {
+        // Silent fail for background poller
+      }
+    }, 15000); // Check every 15 seconds
+
+    return () => clearInterval(interval);
+  }, [isAdminLoggedIn]);
+
+  const fetchDashboardData = async () => {
     setDashboardLoading(true);
-    fetch("/api/admin/metrics")
-      .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to load data.");
-        setMetrics(data.metrics);
-        setUsers(data.users);
-        setOrders(data.orders);
-      })
-      .catch((err) => {
-        console.error(err);
-      })
-      .finally(() => {
-        setDashboardLoading(false);
-      });
+    try {
+      // Fetch Metrics & Users & Orders
+      const resMetrics = await fetch("/api/admin/metrics", { cache: "no-store" });
+      const dataMetrics = await resMetrics.json();
+      if (resMetrics.ok) {
+        setMetrics(dataMetrics.metrics);
+        setUsers(dataMetrics.users);
+        setOrders(dataMetrics.orders);
+      }
+
+      // Fetch Products
+      const resProducts = await fetch("/api/products");
+      const dataProducts = await resProducts.json();
+      if (resProducts.ok) {
+        setProducts(dataProducts);
+      }
+
+      // Fetch Coupons
+      const resCoupons = await fetch("/api/admin/coupons");
+      const dataCoupons = await resCoupons.json();
+      if (resCoupons.ok) {
+        setCoupons(dataCoupons);
+      }
+    } catch (err) {
+      toast.error("Failed to fetch dashboard data.");
+    } finally {
+      setDashboardLoading(false);
+    }
   };
 
   const handleAdminLogin = (e: React.FormEvent) => {
@@ -222,6 +341,7 @@ export default function AdminPage() {
         if (!res.ok) throw new Error(data.error || "Login failed.");
         localStorage.setItem("yemnest_admin_logged_in", "true");
         setIsAdminLoggedIn(true);
+        toast.success("Welcome back, Admin!");
       })
       .catch((err) => {
         setLoginError(err.message || "Invalid credentials.");
@@ -238,10 +358,113 @@ export default function AdminPage() {
     setAdminPassword("");
   };
 
-  const handleCreateProduct = (e: React.FormEvent) => {
+  const handleOrderStatusUpdate = async (orderId: string, status: string) => {
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) {
+        toast.success(`Order status updated to ${status}`);
+        fetchDashboardData();
+      } else {
+        toast.error("Failed to update order status");
+      }
+    } catch (err) {
+      toast.error("An error occurred while updating status");
+    }
+  };
+
+  const handleBulkStatusUpdate = async (status: string) => {
+    if (selectedOrders.length === 0) return;
+    if (!window.confirm(`Update ${selectedOrders.length} orders to ${status}?`)) return;
+
+    setIsUpdatingBulk(true);
+    try {
+      const res = await fetch(`/api/admin/orders/bulk`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderIds: selectedOrders, status }),
+      });
+      if (res.ok) {
+        toast.success(`Successfully updated ${selectedOrders.length} orders`);
+        setSelectedOrders([]);
+        fetchDashboardData();
+      } else {
+        toast.error("Failed to update orders");
+      }
+    } catch (err) {
+      toast.error("An error occurred while updating status");
+    } finally {
+      setIsUpdatingBulk(false);
+    }
+  };
+
+  const toggleOrderSelection = (id: string) => {
+    setSelectedOrders(prev => 
+      prev.includes(id) ? prev.filter(oid => oid !== id) : [...prev, id]
+    );
+  };
+
+  const toggleAllSelection = () => {
+    if (selectedOrders.length === filteredOrders.length) {
+      setSelectedOrders([]);
+    } else {
+      setSelectedOrders(filteredOrders.map(o => o.id));
+    }
+  };
+
+  const openAddProductForm = () => {
+    setIsEditingProduct(true);
+    setEditingProductId(null);
+    setProdName("");
+    setProdSubLine("");
+    setProdPrice("");
+    setProdCutoffPrice("");
+    setProdDescription("");
+    setProdStock("");
+    setProdImage1("");
+    setProdImage2("");
+    setProdImage3("");
+    setProdImage4("");
+    setProdCategory("Atelier Specialties");
+  };
+
+  const openEditProductForm = (p: Product) => {
+    setIsEditingProduct(true);
+    setEditingProductId(p.id);
+    setProdName(p.name);
+    setProdSubLine(p.subLine);
+    setProdPrice(p.price.toString());
+    setProdCutoffPrice(p.cutoffPrice.toString());
+    setProdDescription(p.description);
+    setProdStock(p.stockCount.toString());
+    setProdImage1(p.image1);
+    setProdImage2(p.image2);
+    setProdImage3(p.image3);
+    setProdImage4(p.image4);
+    setProdCategory(p.category);
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this product?")) return;
+    try {
+      const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Product deleted");
+        fetchDashboardData();
+      } else {
+        toast.error("Failed to delete product.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("An error occurred.");
+    }
+  };
+
+  const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault();
-    setProductError("");
-    setProductSuccess(false);
     setIsLoading(true);
 
     if (
@@ -251,19 +474,18 @@ export default function AdminPage() {
       !prodCutoffPrice ||
       !prodDescription ||
       !prodStock ||
-      !prodImage1 ||
-      !prodImage2 ||
-      !prodImage3 ||
-      !prodImage4 ||
       !prodCategory
     ) {
-      setProductError("Please fill in all fields, including all 4 images.");
+      toast.error("Please fill in all required fields.");
       setIsLoading(false);
       return;
     }
 
-    fetch("/api/products", {
-      method: "POST",
+    const endpoint = editingProductId ? `/api/products/${editingProductId}` : "/api/products";
+    const method = editingProductId ? "PUT" : "POST";
+
+    fetch(endpoint, {
+      method,
       headers: {
         "Content-Type": "application/json",
       },
@@ -283,28 +505,107 @@ export default function AdminPage() {
     })
       .then(async (res) => {
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to create product.");
-        setProductSuccess(true);
-        // Clear fields
-        setProdName("");
-        setProdSubLine("");
-        setProdPrice("");
-        setProdCutoffPrice("");
-        setProdDescription("");
-        setProdStock("");
-        setProdImage1("");
-        setProdImage2("");
-        setProdImage3("");
-        setProdImage4("");
+        if (!res.ok) throw new Error(data.error || "Failed to save product.");
+        toast.success("Product saved successfully!");
         fetchDashboardData();
+        setTimeout(() => setIsEditingProduct(false), 500);
       })
       .catch((err) => {
-        setProductError(err.message || "An error occurred.");
+        toast.error(err.message || "An error occurred.");
       })
       .finally(() => {
         setIsLoading(false);
       });
   };
+
+  const handleCreateCoupon = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!couponCode || !couponDiscount) {
+      toast.error("Please fill out both fields.");
+      return;
+    }
+
+    fetch("/api/admin/coupons", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: couponCode,
+        discountPercentage: parseFloat(couponDiscount),
+        isActive: true,
+      }),
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to create coupon.");
+        toast.success("Discount code created!");
+        setCouponCode("");
+        setCouponDiscount("");
+        fetchDashboardData();
+      })
+      .catch((err) => {
+        toast.error(err.message);
+      });
+  };
+
+  const handleToggleCoupon = async (id: string, currentStatus: boolean) => {
+    const action = currentStatus ? "deactivate" : "activate";
+    if (!window.confirm(`Are you sure you want to ${action} this discount code?`)) return;
+    try {
+      const res = await fetch(`/api/admin/coupons/${id}`, { 
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !currentStatus })
+      });
+      if (res.ok) {
+        toast.success(`Coupon ${action}d successfully`);
+        fetchDashboardData();
+      } else {
+        toast.error(`Failed to ${action} coupon.`);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("An error occurred.");
+    }
+  };
+
+  const handlePrintInvoice = (orderId: string) => {
+    window.open(`/admin/print/${orderId}`, '_blank');
+  };
+
+  // Filtered Orders
+  const filteredOrders = orders.filter(o => {
+    const matchesSearch = 
+      o.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      o.userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      o.id.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === "ALL" || o.status === statusFilter;
+    
+    const matchesTime = (() => {
+      if (timeFilter === "ALL") return true;
+      const orderDate = new Date(o.createdAt);
+      const now = new Date();
+      if (timeFilter === "TODAY") {
+        return orderDate.toDateString() === now.toDateString();
+      }
+      if (timeFilter === "THIS_WEEK") {
+        // Last 7 days
+        const diff = now.getTime() - orderDate.getTime();
+        return diff <= 7 * 24 * 60 * 60 * 1000;
+      }
+      if (timeFilter === "THIS_MONTH") {
+        return orderDate.getMonth() === now.getMonth() && orderDate.getFullYear() === now.getFullYear();
+      }
+      if (timeFilter.startsWith("MONTH_")) {
+        const monthIndex = parseInt(timeFilter.split("_")[1], 10);
+        return orderDate.getMonth() === monthIndex && orderDate.getFullYear() === now.getFullYear();
+      }
+      return true;
+    })();
+    
+    return matchesSearch && matchesStatus && matchesTime;
+  });
 
   // Render Login Form
   if (!isAdminLoggedIn) {
@@ -377,8 +678,8 @@ export default function AdminPage() {
     try {
       const parsed = JSON.parse(itemsStr);
       if (Array.isArray(parsed)) {
-        return parsed.map((item: any) => (
-          <div key={item.id} className="text-xs text-zinc-600">
+        return parsed.map((item: any, i) => (
+          <div key={item.id || i} className="text-xs text-zinc-600">
             • {item.name} (Qty: {item.quantity}) - ₹{item.price.toFixed(2)}
           </div>
         ));
@@ -392,8 +693,10 @@ export default function AdminPage() {
   // Render Dashboard
   return (
     <div className="flex-1 min-h-screen bg-[#FAF9F6] flex flex-col md:flex-row text-zinc-900 font-sans">
+      <Toaster position="top-right" toastOptions={{ className: 'rounded-none text-sm shadow-sm border border-zinc-200' }} />
+      
       {/* Sidebar Navigation */}
-      <aside className="w-full md:w-64 bg-zinc-900 text-zinc-300 flex flex-col justify-between py-6">
+      <aside className="w-full md:w-64 bg-zinc-900 text-zinc-300 flex flex-col justify-between py-6 min-h-screen">
         <div>
           <div className="px-6 pb-6 border-b border-zinc-850">
             <h2 className="text-sm uppercase tracking-widest text-[#F5E6C4] font-medium">
@@ -404,9 +707,9 @@ export default function AdminPage() {
 
           <nav className="mt-6 space-y-1 px-4">
             <button
-              onClick={() => setActiveTab("overview")}
+              onClick={() => { setActiveTab("overview"); setIsEditingProduct(false); }}
               className={`w-full text-left px-4 py-2.5 text-xs uppercase tracking-wider font-normal transition-colors ${
-                activeTab === "overview"
+                activeTab === "overview" && !isEditingProduct
                   ? "bg-[#106636] text-white"
                   : "hover:bg-zinc-800 hover:text-white"
               }`}
@@ -414,7 +717,7 @@ export default function AdminPage() {
               Overview
             </button>
             <button
-              onClick={() => setActiveTab("orders")}
+              onClick={() => { setActiveTab("orders"); setIsEditingProduct(false); }}
               className={`w-full text-left px-4 py-2.5 text-xs uppercase tracking-wider font-normal transition-colors ${
                 activeTab === "orders"
                   ? "bg-[#106636] text-white"
@@ -424,24 +727,34 @@ export default function AdminPage() {
               Orders list
             </button>
             <button
-              onClick={() => setActiveTab("users")}
+              onClick={() => { setActiveTab("products"); setIsEditingProduct(false); }}
+              className={`w-full text-left px-4 py-2.5 text-xs uppercase tracking-wider font-normal transition-colors ${
+                activeTab === "products"
+                  ? "bg-[#106636] text-white"
+                  : "hover:bg-zinc-800 hover:text-white"
+              }`}
+            >
+              Manage Products
+            </button>
+            <button
+              onClick={() => { setActiveTab("users"); setIsEditingProduct(false); }}
               className={`w-full text-left px-4 py-2.5 text-xs uppercase tracking-wider font-normal transition-colors ${
                 activeTab === "users"
                   ? "bg-[#106636] text-white"
                   : "hover:bg-zinc-800 hover:text-white"
               }`}
             >
-              Users list
+              Registered Users
             </button>
             <button
-              onClick={() => setActiveTab("add-product")}
+              onClick={() => { setActiveTab("coupons"); setIsEditingProduct(false); }}
               className={`w-full text-left px-4 py-2.5 text-xs uppercase tracking-wider font-normal transition-colors ${
-                activeTab === "add-product"
+                activeTab === "coupons"
                   ? "bg-[#106636] text-white"
                   : "hover:bg-zinc-800 hover:text-white"
               }`}
             >
-              Add Product
+              Discount Codes
             </button>
           </nav>
         </div>
@@ -457,20 +770,21 @@ export default function AdminPage() {
       </aside>
 
       {/* Main Panel Content */}
-      <main className="flex-1 p-6 md:p-10">
+      <main className="flex-1 p-6 md:p-10 w-full overflow-x-hidden">
         <div className="flex justify-between items-center border-b border-zinc-200 pb-4 mb-6">
           <h1 className="text-2xl font-light capitalize tracking-wide">
             {activeTab === "overview" && "System Overview"}
             {activeTab === "orders" && "Customer Orders"}
+            {activeTab === "products" && "Product Inventory"}
             {activeTab === "users" && "Registered Users"}
-            {activeTab === "add-product" && "Add New Chocolate"}
+            {activeTab === "coupons" && "Discount Codes"}
           </h1>
           <button
             onClick={fetchDashboardData}
             disabled={dashboardLoading}
             className="px-4 py-1.5 border border-zinc-300 bg-[#FEFEFD] hover:bg-zinc-50 text-xs transition-all uppercase tracking-wider disabled:opacity-50"
           >
-            {dashboardLoading ? "Refreshing..." : "Refresh"}
+            {dashboardLoading ? "Refreshing..." : "Refresh Data"}
           </button>
         </div>
 
@@ -481,7 +795,7 @@ export default function AdminPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div className="bg-[#FEFEFD] p-6 border border-zinc-200 shadow-sm">
                 <span className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">
-                  Total Sales
+                  Total Revenue
                 </span>
                 <span className="text-2xl font-semibold text-[#724D26]">
                   ₹{metrics.totalRevenue.toFixed(2)}
@@ -507,35 +821,210 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Quick overview table */}
-            <div className="bg-[#FEFEFD] border border-zinc-200 p-6">
-              <h2 className="text-xs uppercase tracking-widest text-[#724D26] font-semibold mb-4">
-                Recent Orders Summary
-              </h2>
-              {orders.length === 0 ? (
-                <p className="text-xs text-zinc-400">No orders placed yet.</p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Chart */}
+              <div className="lg:col-span-2 bg-[#FEFEFD] border border-zinc-200 p-6 shadow-sm">
+                <h2 className="text-xs uppercase tracking-widest text-zinc-700 font-semibold mb-6">
+                  Sales Last 7 Days
+                </h2>
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={metrics.salesData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#eee" vertical={false} />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#888' }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#888' }} dx={-10} tickFormatter={(value) => `₹${value}`} />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '0px', border: '1px solid #e4e4e7', fontSize: '12px' }}
+                        itemStyle={{ color: '#106636' }}
+                      />
+                      <Line type="monotone" dataKey="revenue" stroke="#106636" strokeWidth={3} dot={{ r: 4, fill: '#106636', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Low Stock Widget */}
+              <div className="bg-[#FEFEFD] border border-zinc-200 p-6 shadow-sm">
+                <h2 className="text-xs uppercase tracking-widest text-red-600 font-semibold mb-6 flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  Low Stock Alerts
+                </h2>
+                {metrics.lowStockProducts.length === 0 ? (
+                  <p className="text-xs text-zinc-500">All products are adequately stocked.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {metrics.lowStockProducts.map(p => (
+                      <div key={p.id} className="flex justify-between items-center border-b border-zinc-100 pb-3">
+                        <div>
+                          <p className="text-sm font-semibold text-zinc-800">{p.name}</p>
+                          <p className="text-[10px] text-zinc-400">{p.category}</p>
+                        </div>
+                        <div className="px-2 py-1 bg-red-50 text-red-700 text-xs font-bold border border-red-100">
+                          {p.stockCount} left
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Orders Tab */}
+        {activeTab === "orders" && (
+          <div className="animate-fade-in space-y-4">
+            
+            {/* Search and Filter Bar */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-between bg-[#FEFEFD] border border-zinc-200 p-4 shadow-sm">
+              <div className="flex flex-1 gap-4">
+                <input 
+                  type="text" 
+                  placeholder="Search by customer name, email, or order ID..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1 max-w-md px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none"
+                />
+                <select 
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none"
+                >
+                  <option value="ALL">All Statuses</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="SHIPPED">Shipped</option>
+                  <option value="DELIVERED">Delivered</option>
+                  <option value="CANCELLED">Cancelled</option>
+                </select>
+                <select 
+                  value={timeFilter}
+                  onChange={(e) => setTimeFilter(e.target.value)}
+                  className="px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none"
+                >
+                  <option value="ALL">All Time</option>
+                  <option value="TODAY">New Orders (Today)</option>
+                  <option value="THIS_WEEK">This Week</option>
+                  <option value="THIS_MONTH">This Month</option>
+                  <optgroup label="Specific Months (This Year)">
+                    <option value="MONTH_0">January</option>
+                    <option value="MONTH_1">February</option>
+                    <option value="MONTH_2">March</option>
+                    <option value="MONTH_3">April</option>
+                    <option value="MONTH_4">May</option>
+                    <option value="MONTH_5">June</option>
+                    <option value="MONTH_6">July</option>
+                    <option value="MONTH_7">August</option>
+                    <option value="MONTH_8">September</option>
+                    <option value="MONTH_9">October</option>
+                    <option value="MONTH_10">November</option>
+                    <option value="MONTH_11">December</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              {/* Bulk Actions */}
+              {selectedOrders.length > 0 && (
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-zinc-500 font-medium">{selectedOrders.length} selected</span>
+                  <select 
+                    onChange={(e) => {
+                      if(e.target.value) handleBulkStatusUpdate(e.target.value);
+                      e.target.value = "";
+                    }}
+                    className="px-3 py-2 bg-[#106636] text-white border border-[#106636] focus:outline-none text-xs uppercase tracking-wider cursor-pointer"
+                    disabled={isUpdatingBulk}
+                  >
+                    <option value="">Bulk Action...</option>
+                    <option value="SHIPPED">Mark as Shipped</option>
+                    <option value="DELIVERED">Mark as Delivered</option>
+                    <option value="CANCELLED">Mark as Cancelled</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Orders Table */}
+            <div className="bg-[#FEFEFD] border border-zinc-200 p-6 shadow-sm">
+              {filteredOrders.length === 0 ? (
+                <p className="text-xs text-zinc-400">No orders found matching your search.</p>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
+                  <table className="w-full text-left text-xs border-collapse min-w-[950px]">
                     <thead>
                       <tr className="border-b border-zinc-250 text-zinc-500 uppercase tracking-wider">
-                        <th className="py-2.5 font-medium">Customer</th>
-                        <th className="py-2.5 font-medium">Date</th>
-                        <th className="py-2.5 font-medium">Total Price</th>
+                        <th className="py-2.5 px-2">
+                          <input 
+                            type="checkbox" 
+                            checked={selectedOrders.length === filteredOrders.length && filteredOrders.length > 0}
+                            onChange={toggleAllSelection}
+                            className="cursor-pointer"
+                          />
+                        </th>
+                        <th className="py-2.5 font-medium">Customer Details</th>
+                        <th className="py-2.5 font-medium">Shipping Address</th>
+                        <th className="py-2.5 font-medium">Items Ordered</th>
+                        <th className="py-2.5 font-medium">Price</th>
+                        <th className="py-2.5 font-medium">Order Date</th>
+                        <th className="py-2.5 font-medium">Status / Action</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {orders.slice(0, 5).map((order) => (
-                        <tr key={order.id} className="border-b border-zinc-100 hover:bg-zinc-50/50">
-                          <td className="py-3 font-normal">
-                            <div>{order.userName}</div>
-                            <div className="text-[9px] font-mono text-zinc-400">ID: {order.id}</div>
+                      {filteredOrders.map((order) => (
+                        <tr key={order.id} className="border-b border-zinc-150 hover:bg-zinc-50/50 align-top transition-colors">
+                          <td className="py-4 px-2">
+                            <input 
+                              type="checkbox" 
+                              checked={selectedOrders.includes(order.id)}
+                              onChange={() => toggleOrderSelection(order.id)}
+                              className="cursor-pointer"
+                            />
                           </td>
-                          <td className="py-3 text-zinc-500">
-                            {new Date(order.createdAt).toLocaleDateString()}
+                          <td className="py-4">
+                            <div className="font-semibold text-zinc-800">{order.userName}</div>
+                            <div className="text-[10px] text-zinc-500 mt-0.5">{order.userEmail}</div>
+                            <div className="text-[9px] font-mono text-zinc-400 mt-1">ID: {order.id}</div>
                           </td>
-                          <td className="py-3 font-semibold text-zinc-700">
+                          <td className="py-4 text-zinc-600 max-w-xs">
+                            <div>{order.houseNo}, {order.addressLine1}</div>
+                            <div>Pin: {order.pincode}</div>
+                            <div className="mt-1">Ph: {order.phoneNumber}</div>
+                          </td>
+                          <td className="py-4 pr-4">
+                            {renderOrderItemsList(order.items)}
+                          </td>
+                          <td className="py-4 font-semibold text-[#724D26]">
                             ₹{order.totalPrice.toFixed(2)}
+                          </td>
+                          <td className="py-4 text-zinc-500">
+                            {new Date(order.createdAt).toLocaleString()}
+                          </td>
+                          <td className="py-4 space-y-2">
+                            <select 
+                              value={order.status}
+                              onChange={(e) => handleOrderStatusUpdate(order.id, e.target.value)}
+                              className={`w-full px-2 py-1 outline-none text-xs font-semibold cursor-pointer border ${
+                                order.status === 'PENDING' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                                order.status === 'SHIPPED' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                order.status === 'DELIVERED' ? 'bg-green-50 text-green-700 border-green-200' :
+                                'bg-zinc-50 text-zinc-700 border-zinc-200'
+                              }`}
+                            >
+                              <option value="PENDING">PENDING</option>
+                              <option value="SHIPPED">SHIPPED</option>
+                              <option value="DELIVERED">DELIVERED</option>
+                              <option value="CANCELLED">CANCELLED</option>
+                            </select>
+                            <button 
+                              onClick={() => handlePrintInvoice(order.id)}
+                              className="w-full flex items-center justify-center gap-1.5 px-2 py-1 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-600 uppercase tracking-widest transition-colors text-[9px]"
+                            >
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                              </svg>
+                              Print Slip
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -547,130 +1036,80 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Orders Tab */}
-        {activeTab === "orders" && (
-          <div className="bg-[#FEFEFD] border border-zinc-200 p-6 animate-fade-in">
-            {orders.length === 0 ? (
-              <p className="text-xs text-zinc-400">No orders found.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse min-w-[800px]">
-                  <thead>
-                    <tr className="border-b border-zinc-250 text-zinc-500 uppercase tracking-wider">
-                      <th className="py-2.5 font-medium">Customer Details</th>
-                      <th className="py-2.5 font-medium">Full Shipping Address</th>
-                      <th className="py-2.5 font-medium">Items Ordered</th>
-                      <th className="py-2.5 font-medium">Price</th>
-                      <th className="py-2.5 font-medium">Order Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.map((order) => (
-                      <tr key={order.id} className="border-b border-zinc-150 hover:bg-zinc-50/50 align-top">
-                        <td className="py-4">
-                          <div className="font-semibold text-zinc-800">{order.userName}</div>
-                          <div className="text-[10px] text-zinc-500 mt-0.5">{order.userEmail}</div>
-                          <div className="text-[9px] font-mono text-zinc-400 mt-1">Order ID: {order.id}</div>
-                          {order.userId && (
-                            <div className="text-[9px] font-mono text-zinc-400 mt-0.5">User ID: {order.userId}</div>
-                          )}
-                        </td>
-                        <td className="py-4 text-zinc-600 max-w-xs">
-                          <div>
-                            <strong>House No:</strong> {order.houseNo}
-                          </div>
-                          <div>
-                            <strong>Street:</strong> {order.addressLine1}
-                          </div>
-                          <div>
-                            <strong>Pin Code:</strong> {order.pincode}
-                          </div>
-                          <div className="mt-1">
-                            <strong>Phone:</strong> {order.phoneNumber}
-                          </div>
-                          <div>
-                            <strong>Alt Phone:</strong> {order.alternativeMobileNumber}
-                          </div>
-                        </td>
-                        <td className="py-4 pr-4">
-                          {renderOrderItemsList(order.items)}
-                        </td>
-                        <td className="py-4 font-semibold text-[#724D26]">
-                          ₹{order.totalPrice.toFixed(2)}
-                        </td>
-                        <td className="py-4 text-zinc-500">
-                          {new Date(order.createdAt).toLocaleString()}
-                        </td>
+        {/* Products Tab */}
+        {activeTab === "products" && !isEditingProduct && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex justify-end">
+              <button 
+                onClick={openAddProductForm}
+                className="bg-[#106636] text-white px-5 py-2.5 text-xs uppercase tracking-widest hover:bg-zinc-900 transition-colors"
+              >
+                + Add New Product
+              </button>
+            </div>
+            
+            <div className="bg-[#FEFEFD] border border-zinc-200 p-6 shadow-sm">
+              {products.length === 0 ? (
+                <p className="text-xs text-zinc-400">No products found.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse min-w-[700px]">
+                    <thead>
+                      <tr className="border-b border-zinc-250 text-zinc-500 uppercase tracking-wider">
+                        <th className="py-2.5 font-medium">Product</th>
+                        <th className="py-2.5 font-medium">Category</th>
+                        <th className="py-2.5 font-medium">Price</th>
+                        <th className="py-2.5 font-medium">Stock</th>
+                        <th className="py-2.5 font-medium text-right">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    </thead>
+                    <tbody>
+                      {products.map((product) => (
+                        <tr key={product.id} className="border-b border-zinc-150 hover:bg-zinc-50/50 align-middle">
+                          <td className="py-3 flex items-center gap-3">
+                            <img src={product.image1} alt={product.name} className="w-10 h-10 object-cover border border-zinc-200" />
+                            <div>
+                              <div className="font-semibold text-zinc-800">{product.name}</div>
+                              <div className="text-[10px] text-zinc-500">{product.subLine}</div>
+                            </div>
+                          </td>
+                          <td className="py-3 text-zinc-600">{product.category}</td>
+                          <td className="py-3 text-[#724D26] font-semibold">₹{product.price.toFixed(2)}</td>
+                          <td className="py-3">
+                            <span className={`px-2 py-0.5 border ${product.stockCount <= 5 ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`}>
+                              {product.stockCount}
+                            </span>
+                          </td>
+                          <td className="py-3 text-right space-x-2">
+                            <button onClick={() => openEditProductForm(product)} className="text-[#106636] hover:underline uppercase tracking-wider text-[10px]">Edit</button>
+                            <button onClick={() => handleDeleteProduct(product.id)} className="text-red-600 hover:underline uppercase tracking-wider text-[10px]">Delete</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Users Tab */}
-        {activeTab === "users" && (
-          <div className="bg-[#FEFEFD] border border-zinc-200 p-6 animate-fade-in">
-            {users.length === 0 ? (
-              <p className="text-xs text-zinc-400">No registered users found.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse min-w-[700px]">
-                  <thead>
-                    <tr className="border-b border-zinc-250 text-zinc-500 uppercase tracking-wider">
-                      <th className="py-2.5 font-medium">Name</th>
-                      <th className="py-2.5 font-medium">Email</th>
-                      <th className="py-2.5 font-medium">Address</th>
-                      <th className="py-2.5 font-medium">Contact Numbers</th>
-                      <th className="py-2.5 font-medium">Joined Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((user) => (
-                      <tr key={user.id} className="border-b border-zinc-150 hover:bg-zinc-50/50 align-top">
-                        <td className="py-4">
-                          <div className="font-semibold text-zinc-800">{user.name}</div>
-                          <div className="text-[9px] font-mono text-zinc-400 mt-1">User ID: {user.id}</div>
-                        </td>
-                        <td className="py-4 text-zinc-600">{user.email}</td>
-                        <td className="py-4 text-zinc-600">
-                          <div>House: {user.houseNo}</div>
-                          <div>{user.addressLine1}</div>
-                          <div>Pin: {user.pincode}</div>
-                        </td>
-                        <td className="py-4 text-zinc-600">
-                          <div>Primary: {user.phoneNumber}</div>
-                          <div>Alt: {user.alternativeMobileNumber}</div>
-                        </td>
-                        <td className="py-4 text-zinc-500">
-                          {new Date(user.createdAt).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Add / Edit Product Form */}
+        {activeTab === "products" && isEditingProduct && (
+          <div className="bg-[#FEFEFD] border border-zinc-200 p-6 animate-fade-in max-w-3xl shadow-sm">
+            <div className="flex justify-between items-center mb-6 border-b border-zinc-100 pb-4">
+              <h2 className="text-lg font-semibold text-zinc-800">
+                {editingProductId ? "Edit Product" : "Add New Product"}
+              </h2>
+              <button 
+                onClick={() => setIsEditingProduct(false)}
+                className="text-xs uppercase tracking-widest text-zinc-500 hover:text-black"
+              >
+                Cancel
+              </button>
+            </div>
 
-        {/* Add Product Tab */}
-        {activeTab === "add-product" && (
-          <div className="bg-[#FEFEFD] border border-zinc-200 p-6 animate-fade-in max-w-2xl">
-            <form onSubmit={handleCreateProduct} className="space-y-4">
-              {productSuccess && (
-                <div className="p-3 bg-green-50 border border-green-200 text-[#106636] text-xs font-medium rounded-none animate-fade-in">
-                  Product created successfully!
-                </div>
-              )}
-              {productError && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-none">
-                  {productError}
-                </div>
-              )}
-
+            <form onSubmit={handleSaveProduct} className="space-y-4">
               {/* Name & SubLine */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -754,8 +1193,12 @@ export default function AdminPage() {
                     className="w-full px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none cursor-pointer"
                   >
                     <option value="Kunafa Bars">Kunafa Bars</option>
+                    <option value="Biscoff Filling Kunafa Bars">Biscoff Filling Kunafa Bars</option>
+                    <option value="Pistachio Filling Kunafa">Pistachio Filling Kunafa</option>
+                    <option value="Nutella Filling Kunafa Bars">Nutella Filling Kunafa Bars</option>
                     <option value="Gift Boxes">Gift Boxes</option>
                     <option value="Atelier Specialties">Atelier Specialties</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
               </div>
@@ -788,18 +1231,148 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="pt-2">
+              <div className="pt-4">
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full flex justify-center py-3 bg-zinc-900 hover:bg-zinc-800 text-white uppercase tracking-wider text-xs rounded-none disabled:bg-zinc-700 transition-colors"
+                  className="w-full flex justify-center py-3 bg-[#106636] hover:bg-zinc-900 text-white uppercase tracking-wider text-xs rounded-none disabled:bg-zinc-700 transition-colors"
                 >
-                  {isLoading ? "Submitting..." : "Add Product"}
+                  {isLoading ? "Saving..." : "Save Product"}
                 </button>
               </div>
             </form>
           </div>
         )}
+
+        {/* Coupons Tab */}
+        {activeTab === "coupons" && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="bg-[#FEFEFD] border border-zinc-200 p-6 shadow-sm max-w-md">
+              <h2 className="text-xs uppercase tracking-widest text-zinc-700 font-semibold mb-4">Create Discount Code</h2>
+              <form onSubmit={handleCreateCoupon} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">Coupon Code</label>
+                  <input
+                    type="text"
+                    required
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    className="w-full px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs uppercase"
+                    placeholder="e.g. SUMMER20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">Discount %</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    required
+                    value={couponDiscount}
+                    onChange={(e) => setCouponDiscount(e.target.value)}
+                    className="w-full px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs"
+                    placeholder="e.g. 20"
+                  />
+                </div>
+                <button type="submit" className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white uppercase text-xs tracking-wider">
+                  Create Coupon
+                </button>
+              </form>
+            </div>
+
+            <div className="bg-[#FEFEFD] border border-zinc-200 p-6 shadow-sm">
+              <h2 className="text-xs uppercase tracking-widest text-zinc-700 font-semibold mb-4">Active Discount Codes</h2>
+              {coupons.length === 0 ? (
+                <p className="text-xs text-zinc-400">No coupons created yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse min-w-[500px]">
+                    <thead>
+                      <tr className="border-b border-zinc-250 text-zinc-500 uppercase tracking-wider">
+                        <th className="py-2.5 font-medium">Code</th>
+                        <th className="py-2.5 font-medium">Discount</th>
+                        <th className="py-2.5 font-medium">Status</th>
+                        <th className="py-2.5 font-medium">Times Used</th>
+                        <th className="py-2.5 font-medium">Created On</th>
+                        <th className="py-2.5 font-medium text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {coupons.map((c) => (
+                        <tr key={c.id} className="border-b border-zinc-150 hover:bg-zinc-50/50">
+                          <td className="py-3 font-semibold text-zinc-800 font-mono tracking-wider">{c.code}</td>
+                          <td className="py-3 text-[#106636] font-bold">{c.discountPercentage}% OFF</td>
+                          <td className="py-3">
+                            <span className={`px-2 py-0.5 border ${c.isActive ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                              {c.isActive ? 'ACTIVE' : 'INACTIVE'}
+                            </span>
+                          </td>
+                          <td className="py-3 text-zinc-600">{c.uses}</td>
+                          <td className="py-3 text-zinc-500">{new Date(c.createdAt).toLocaleDateString()}</td>
+                          <td className="py-3 text-right">
+                            <button 
+                              onClick={() => handleToggleCoupon(c.id, c.isActive)} 
+                              className={`${c.isActive ? 'text-red-600' : 'text-green-600'} hover:underline uppercase tracking-wider text-[10px] font-semibold`}
+                            >
+                              {c.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Users Tab */}
+        {activeTab === "users" && (
+          <div className="bg-[#FEFEFD] border border-zinc-200 p-6 animate-fade-in shadow-sm">
+            {users.length === 0 ? (
+              <p className="text-xs text-zinc-400">No registered users found.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse min-w-[700px]">
+                  <thead>
+                    <tr className="border-b border-zinc-250 text-zinc-500 uppercase tracking-wider">
+                      <th className="py-2.5 font-medium">Name</th>
+                      <th className="py-2.5 font-medium">Email</th>
+                      <th className="py-2.5 font-medium">Address</th>
+                      <th className="py-2.5 font-medium">Contact Numbers</th>
+                      <th className="py-2.5 font-medium">Joined Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((user) => (
+                      <tr key={user.id} className="border-b border-zinc-150 hover:bg-zinc-50/50 align-top">
+                        <td className="py-4">
+                          <div className="font-semibold text-zinc-800">{user.name}</div>
+                          <div className="text-[9px] font-mono text-zinc-400 mt-1">ID: {user.id}</div>
+                        </td>
+                        <td className="py-4 text-zinc-600">{user.email}</td>
+                        <td className="py-4 text-zinc-600">
+                          <div>House: {user.houseNo}</div>
+                          <div>{user.addressLine1}</div>
+                          <div>Pin: {user.pincode}</div>
+                        </td>
+                        <td className="py-4 text-zinc-600">
+                          <div>Primary: {user.phoneNumber}</div>
+                          <div>Alt: {user.alternativeMobileNumber}</div>
+                        </td>
+                        <td className="py-4 text-zinc-500">
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
       </main>
     </div>
   );

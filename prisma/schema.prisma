@@ -62,3 +62,12 @@ model Product {
   dietary     String   @default("[\"Vegetarian\", \"Contains Nuts\"]")
   createdAt   DateTime @default(now())
 }
+
+model Coupon {
+  id                 String   @id @default(uuid())
+  code               String   @unique
+  discountPercentage Float
+  isActive           Boolean  @default(true)
+  uses               Int      @default(0)
+  createdAt          DateTime @default(now())
+}

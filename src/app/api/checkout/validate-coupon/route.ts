@@ -30,6 +30,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, discountPercentage: 0.15 });
     }
 
+    if (couponCode === "YEMNEST10") {
+      return NextResponse.json({ success: true, discountPercentage: 0.10 });
+    }
+
+    // Check dynamic coupons from database
+    const dbCoupon = await prisma.coupon.findUnique({
+      where: { code: couponCode },
+    });
+
+    if (dbCoupon && dbCoupon.isActive) {
+      return NextResponse.json({ 
+        success: true, 
+        discountPercentage: dbCoupon.discountPercentage / 100 
+      });
+    }
+
     return NextResponse.json(
       { error: "Invalid coupon code." },
       { status: 400 }

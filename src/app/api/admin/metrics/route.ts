@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   try {
     // Fetch users (excluding passwords)
@@ -33,12 +35,38 @@ export async function GET(request: Request) {
     const totalOrders = orders.length;
     const totalRevenue = orders.reduce((sum, order) => sum + order.totalPrice, 0);
 
+    // Calculate daily sales for chart
+    const last7Days = [...Array(7)].map((_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }).reverse();
+
+    const salesData = last7Days.map(dateLabel => {
+      const dailyOrders = orders.filter(o => 
+        new Date(o.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) === dateLabel
+      );
+      return {
+        name: dateLabel,
+        revenue: dailyOrders.reduce((sum, o) => sum + o.totalPrice, 0)
+      };
+    });
+
+    // Fetch low stock products
+    const lowStockProducts = await prisma.product.findMany({
+      where: { stockCount: { lte: 5 } },
+      select: { id: true, name: true, stockCount: true, category: true },
+      orderBy: { stockCount: 'asc' }
+    });
+
     return NextResponse.json(
       {
         metrics: {
           totalUsers,
           totalOrders,
           totalRevenue,
+          salesData,
+          lowStockProducts,
         },
         users,
         orders,

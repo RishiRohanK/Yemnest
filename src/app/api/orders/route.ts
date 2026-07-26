@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendEmail } from "@/lib/mailer";
 
 export async function POST(request: Request) {
   try {
@@ -40,6 +41,46 @@ export async function POST(request: Request) {
         totalPrice: parseFloat(totalPrice.toString()),
       },
     });
+
+    // Decrement stock for each purchased item
+    try {
+      const parsedItems = typeof items === "string" ? JSON.parse(items) : items;
+      if (Array.isArray(parsedItems)) {
+        for (const item of parsedItems) {
+          if (item.id && item.quantity) {
+            await prisma.product.update({
+              where: { id: item.id },
+              data: {
+                stockCount: {
+                  decrement: item.quantity
+                }
+              }
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to decrement stock:", err);
+    }
+
+    // Send admin notification
+    if (process.env.ADMIN_EMAIL) {
+      const emailHtml = `
+        <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #106636;">New Order Received!</h2>
+          <p><strong>Customer:</strong> ${user.name} (${user.email})</p>
+          <p><strong>Total Price:</strong> ₹${totalPrice}</p>
+          <p><strong>Order ID:</strong> ${order.id}</p>
+          <p><a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin">View in Admin Panel</a></p>
+        </div>
+      `;
+      // Don't await so it doesn't block the checkout response
+      sendEmail({
+        to: process.env.ADMIN_EMAIL,
+        subject: `New Yemnest Order - ₹${totalPrice}`,
+        html: emailHtml,
+      }).catch(err => console.error("Admin email failed:", err));
+    }
 
     return NextResponse.json(
       { message: "Order placed successfully", order },

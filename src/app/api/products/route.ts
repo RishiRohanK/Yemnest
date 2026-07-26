@@ -45,14 +45,10 @@ export async function POST(request: Request) {
       cutoffPrice === undefined ||
       !description ||
       stockCount === undefined ||
-      !image1 ||
-      !image2 ||
-      !image3 ||
-      !image4 ||
       !category
     ) {
       return NextResponse.json(
-        { error: "Please fill in all product fields, including all 4 images." },
+        { error: "Please fill in all required product fields." },
         { status: 400 }
       );
     }

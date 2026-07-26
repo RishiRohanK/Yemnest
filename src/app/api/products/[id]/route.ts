@@ -33,3 +33,59 @@ export async function GET(
     );
   }
 }
+
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
+  try {
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
+    const body = await request.json();
+    
+    const product = await prisma.product.update({
+      where: { id },
+      data: {
+        name: body.name,
+        subLine: body.subLine,
+        price: body.price !== undefined ? parseFloat(body.price.toString()) : undefined,
+        cutoffPrice: body.cutoffPrice !== undefined ? parseFloat(body.cutoffPrice.toString()) : undefined,
+        description: body.description,
+        stockCount: body.stockCount !== undefined ? parseInt(body.stockCount.toString(), 10) : undefined,
+        image1: body.image1,
+        image2: body.image2,
+        image3: body.image3,
+        image4: body.image4,
+        category: body.category,
+      },
+    });
+
+    return NextResponse.json(product, { status: 200 });
+  } catch (error: any) {
+    console.error("Update product error:", error);
+    return NextResponse.json(
+      { error: "Failed to update product." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
+  try {
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
+    await prisma.product.delete({
+      where: { id },
+    });
+    return NextResponse.json({ message: "Product deleted" }, { status: 200 });
+  } catch (error: any) {
+    console.error("Delete product error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete product." },
+      { status: 500 }
+    );
+  }
+}

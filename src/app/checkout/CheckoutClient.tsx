@@ -58,37 +58,33 @@ export default function CheckoutClient() {
 
   const handleApplyCoupon = async () => {
     setError("");
-    if (couponCode.toUpperCase() === "FINESTCOCOA") {
-      if (!formData.email) {
+    const code = couponCode.toUpperCase();
+    
+    if (!code) {
+      setError("Please enter a coupon code.");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/checkout/validate-coupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          couponCode: code,
+          email: formData.email || "guest@example.com", // Fallback for dynamic coupons that don't need email
+        }),
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
         setDiscount(0);
-        setError("Please enter your email address first to validate this coupon.");
-        return;
+        setError(data.error || "Invalid coupon.");
+      } else {
+        setDiscount(subTotal * data.discountPercentage);
       }
-      try {
-        const res = await fetch("/api/checkout/validate-coupon", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            couponCode: couponCode.toUpperCase(),
-            email: formData.email,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          setDiscount(0);
-          setError(data.error || "Invalid coupon.");
-        } else {
-          setDiscount(subTotal * data.discountPercentage);
-        }
-      } catch (err) {
-        setDiscount(0);
-        setError("Failed to validate coupon");
-      }
-    } else if (couponCode.toUpperCase() === "YEMNEST10") {
-      setDiscount(subTotal * 0.1);
-    } else {
+    } catch (err) {
       setDiscount(0);
-      setError("Invalid coupon code");
+      setError("Failed to validate coupon");
     }
   };
 

@@ -381,7 +381,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               <div className="text-sm text-zinc-600 leading-relaxed max-w-2xl mx-auto animate-fade-in text-left">
                 <p className="mb-4"><strong>Ingredients:</strong> Cocoa Mass, 100% Pure Cocoa Butter, Unrefined Cane Sugar, Emulsifier (Sunflower Lecithin), Natural Vanilla Flavoring.</p>
                 <p className="mb-4"><strong>Allergens:</strong> May contain traces of tree nuts, milk, and soy. Produced in a facility that handles dairy and nuts.</p>
-                <p><strong>Net Weight:</strong> 150g (5.29 oz)</p>
+                <p><strong>Net Weight:</strong> 250g (8.8 oz)</p>
               </div>
             )}
             {activeTab === "pairing" && (
