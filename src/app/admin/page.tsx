@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 import {
   LineChart,
   Line,
@@ -153,7 +156,9 @@ function ImageDropZone({ image, setImage, label }: ImageDropZoneProps) {
 
         {image ? (
           <>
-            <img src={image} alt={label} className="w-full h-full object-cover select-none" />
+            <div className="relative w-full h-full">
+              <Image src={image} alt={label} fill className="object-cover select-none" unoptimized />
+            </div>
             <button
               type="button"
               onClick={(e) => {
@@ -183,7 +188,9 @@ function ImageDropZone({ image, setImage, label }: ImageDropZoneProps) {
 }
 
 export default function AdminPage() {
+  const router = useRouter();
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -226,6 +233,7 @@ export default function AdminPage() {
   const [prodDescription, setProdDescription] = useState("");
   const [prodStock, setProdStock] = useState("");
   const [prodCategory, setProdCategory] = useState("Atelier Specialties");
+  const [customCategory, setCustomCategory] = useState("");
   const [prodImage1, setProdImage1] = useState("");
   const [prodImage2, setProdImage2] = useState("");
   const [prodImage3, setProdImage3] = useState("");
@@ -236,10 +244,17 @@ export default function AdminPage() {
   const [couponDiscount, setCouponDiscount] = useState("");
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const logged = localStorage.getItem("yemnest_admin_logged_in") === "true";
-      setIsAdminLoggedIn(logged);
-    }
+    fetch("/api/auth/me")
+      .then(res => res.json())
+      .then(data => {
+        if (data.authenticated && data.role === "admin") {
+          setIsAdminLoggedIn(true);
+        } else {
+          setIsAdminLoggedIn(false);
+        }
+      })
+      .catch(() => setIsAdminLoggedIn(false))
+      .finally(() => setIsCheckingAuth(false));
   }, []);
 
   useEffect(() => {
@@ -329,17 +344,16 @@ export default function AdminPage() {
     setLoginError("");
     setIsLoading(true);
 
-    fetch("/api/admin/login", {
+    fetch("/api/auth/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ email: adminEmail, password: adminPassword }),
+      body: JSON.stringify({ email: adminEmail, password: adminPassword, isAdminLogin: true }),
     })
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Login failed.");
-        localStorage.setItem("yemnest_admin_logged_in", "true");
         setIsAdminLoggedIn(true);
         toast.success("Welcome back, Admin!");
       })
@@ -352,10 +366,11 @@ export default function AdminPage() {
   };
 
   const handleAdminLogout = () => {
-    localStorage.removeItem("yemnest_admin_logged_in");
-    setIsAdminLoggedIn(false);
-    setAdminEmail("");
-    setAdminPassword("");
+    fetch("/api/auth/logout", { method: "POST" }).then(() => {
+      setIsAdminLoggedIn(false);
+      setAdminEmail("");
+      setAdminPassword("");
+    });
   };
 
   const handleOrderStatusUpdate = async (orderId: string, status: string) => {
@@ -429,6 +444,7 @@ export default function AdminPage() {
     setProdImage3("");
     setProdImage4("");
     setProdCategory("Atelier Specialties");
+    setCustomCategory("");
   };
 
   const openEditProductForm = (p: Product) => {
@@ -445,6 +461,7 @@ export default function AdminPage() {
     setProdImage3(p.image3);
     setProdImage4(p.image4);
     setProdCategory(p.category);
+    setCustomCategory("");
   };
 
   const handleDeleteProduct = async (id: string) => {
@@ -467,6 +484,8 @@ export default function AdminPage() {
     e.preventDefault();
     setIsLoading(true);
 
+    const finalCategory = prodCategory === "Other" ? customCategory.trim() : prodCategory;
+
     if (
       !prodName ||
       !prodSubLine ||
@@ -474,7 +493,7 @@ export default function AdminPage() {
       !prodCutoffPrice ||
       !prodDescription ||
       !prodStock ||
-      !prodCategory
+      !finalCategory
     ) {
       toast.error("Please fill in all required fields.");
       setIsLoading(false);
@@ -500,7 +519,7 @@ export default function AdminPage() {
         image2: prodImage2,
         image3: prodImage3,
         image4: prodImage4,
-        category: prodCategory,
+        category: finalCategory,
       }),
     })
       .then(async (res) => {
@@ -607,67 +626,55 @@ export default function AdminPage() {
     return matchesSearch && matchesStatus && matchesTime;
   });
 
-  // Render Login Form
-  if (!isAdminLoggedIn) {
+  const allCategories = Array.from(new Set([
+    "Kunafa Bars",
+    "Biscoff Filling Kunafa Bars",
+    "Pistachio Filling Kunafa",
+    "Nutella Filling Kunafa Bars",
+    "Gift Boxes",
+    "Atelier Specialties",
+    ...products.map(p => p.category)
+  ]));
+
+  // Render Loading State while checking auth
+  if (isCheckingAuth) {
     return (
-      <div className="flex-1 flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-[#FAF9F6] text-zinc-900 font-sans min-h-[75vh]">
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <h1 className="text-center text-3xl font-light tracking-tight text-zinc-900">
-            Admin Sign In
-          </h1>
-          <p className="mt-2 text-center text-xs text-zinc-500 uppercase tracking-widest">
-            Enter administrator credentials
-          </p>
+      <div className="flex-1 flex items-center justify-center min-h-[75vh] bg-[#FAF9F6]">
+        <div className="flex flex-col items-center gap-4 animate-fade-in">
+           <svg
+             className="animate-spin h-8 w-8 text-[#106636]"
+             fill="none"
+             viewBox="0 0 24 24"
+           >
+             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+           </svg>
+           <p className="text-sm text-zinc-500 uppercase tracking-widest">Checking access...</p>
         </div>
+      </div>
+    );
+  }
 
-        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-[#FEFEFD] py-8 px-4 shadow-sm border border-zinc-200/60 sm:px-10 rounded-none">
-            <form onSubmit={handleAdminLogin} className="space-y-6">
-              {loginError && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-none">
-                  {loginError}
-                </div>
-              )}
-
-              <div>
-                <label htmlFor="email" className="block text-xs uppercase tracking-wider font-normal text-zinc-650 mb-2">
-                  Admin Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  className="block w-full px-4 py-3 bg-[#FAF9F6] border border-zinc-200/80 text-zinc-900 text-sm focus:outline-none focus:border-[#106636] focus:bg-white rounded-none"
-                  placeholder="admin@example.com"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-xs uppercase tracking-wider font-normal text-zinc-650 mb-2">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  required
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  className="block w-full px-4 py-3 bg-[#FAF9F6] border border-zinc-200/80 text-zinc-900 text-sm focus:outline-none focus:border-[#106636] focus:bg-white rounded-none"
-                  placeholder="••••••••"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex justify-center py-3.5 bg-zinc-900 hover:bg-zinc-800 text-white uppercase tracking-wider text-xs rounded-none disabled:bg-zinc-700"
-              >
-                {isLoading ? "Verifying..." : "Log In"}
-              </button>
-            </form>
-          </div>
+  // If not logged in, redirect to the main unified signin page
+  if (!isAdminLoggedIn) {
+    // We cannot call router.push during render, so we use a small effect trick or window.location directly
+    if (typeof window !== "undefined") {
+      setTimeout(() => {
+        router.push("/signin");
+      }, 0);
+    }
+    return (
+      <div className="min-h-screen bg-[#FAF9F6] flex flex-col items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-4 animate-fade-in">
+           <svg
+             className="animate-spin h-8 w-8 text-[#106636]"
+             fill="none"
+             viewBox="0 0 24 24"
+           >
+             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+           </svg>
+           <p className="text-sm text-zinc-500 uppercase tracking-widest">Redirecting to Sign In...</p>
         </div>
       </div>
     );
@@ -1067,7 +1074,9 @@ export default function AdminPage() {
                       {products.map((product) => (
                         <tr key={product.id} className="border-b border-zinc-150 hover:bg-zinc-50/50 align-middle">
                           <td className="py-3 flex items-center gap-3">
-                            <img src={product.image1} alt={product.name} className="w-10 h-10 object-cover border border-zinc-200" />
+                            <div className="relative w-10 h-10 border border-zinc-200">
+                              <Image src={product.image1} alt={product.name} fill className="object-cover" unoptimized />
+                            </div>
                             <div>
                               <div className="font-semibold text-zinc-800">{product.name}</div>
                               <div className="text-[10px] text-zinc-500">{product.subLine}</div>
@@ -1192,14 +1201,21 @@ export default function AdminPage() {
                     onChange={(e) => setProdCategory(e.target.value)}
                     className="w-full px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none cursor-pointer"
                   >
-                    <option value="Kunafa Bars">Kunafa Bars</option>
-                    <option value="Biscoff Filling Kunafa Bars">Biscoff Filling Kunafa Bars</option>
-                    <option value="Pistachio Filling Kunafa">Pistachio Filling Kunafa</option>
-                    <option value="Nutella Filling Kunafa Bars">Nutella Filling Kunafa Bars</option>
-                    <option value="Gift Boxes">Gift Boxes</option>
-                    <option value="Atelier Specialties">Atelier Specialties</option>
+                    {allCategories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
                     <option value="Other">Other</option>
                   </select>
+                  {prodCategory === "Other" && (
+                    <input
+                      type="text"
+                      required
+                      value={customCategory}
+                      onChange={(e) => setCustomCategory(e.target.value)}
+                      className="w-full mt-2 px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none"
+                      placeholder="Type custom category name..."
+                    />
+                  )}
                 </div>
               </div>
 

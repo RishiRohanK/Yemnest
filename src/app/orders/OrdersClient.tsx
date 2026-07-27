@@ -13,14 +13,16 @@ export default function OrdersClient() {
 
   useEffect(() => {
     const fetchOrders = async () => {
-      const storedUser = localStorage.getItem("yemnest_user");
-      if (!storedUser) {
-        router.push("/signin");
-        return;
-      }
-
       try {
-        const user = JSON.parse(storedUser);
+        const authRes = await fetch("/api/auth/me");
+        const authData = await authRes.json();
+        
+        if (!authData.authenticated || authData.role !== "user" || !authData.user) {
+          router.push("/signin");
+          return;
+        }
+
+        const user = authData.user;
         const res = await fetch(`/api/orders?email=${encodeURIComponent(user.email)}`);
         const data = await res.json();
 
@@ -93,6 +95,23 @@ export default function OrdersClient() {
                         <span className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Total</span>
                         <span className="font-medium text-[#106636]">₹{order.totalPrice.toFixed(2)}</span>
                       </div>
+                      {order.status === "DELIVERED" ? (
+                        <div>
+                          <span className="block text-[10px] uppercase tracking-widest text-[#106636] font-semibold mb-1">Delivered On</span>
+                          <span className="font-medium text-zinc-900">{
+                            order.deliveredAt 
+                              ? new Date(order.deliveredAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                              : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                          }</span>
+                        </div>
+                      ) : (
+                        <div>
+                          <span className="block text-[10px] uppercase tracking-widest text-[#106636] font-semibold mb-1">Est. Delivery</span>
+                          <span className="font-medium text-zinc-600">{
+                            new Date(new Date(order.createdAt).setDate(new Date(order.createdAt).getDate() + 5)).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                          }</span>
+                        </div>
+                      )}
                     </div>
                     <div className="text-right">
                       <span className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Order ID</span>

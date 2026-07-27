@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
+import { toast } from "react-hot-toast";
 
 interface Product {
   id: string;
@@ -105,9 +106,10 @@ const ProductCard = memo(({ product, onAddToCart, priority, isWishlisted, onTogg
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                onAddToCart(product);
-                setIsAdded(true);
-                setTimeout(() => setIsAdded(false), 2000);
+                if (onAddToCart(product)) {
+                  setIsAdded(true);
+                  setTimeout(() => setIsAdded(false), 2000);
+                }
               }}
               disabled={product.stockCount === 0}
               className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${isAdded ? "bg-[#106636] text-white" : "bg-zinc-100 hover:bg-[#106636] text-zinc-900 hover:text-white"}`}
@@ -139,6 +141,22 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
     setSearchQuery(searchParams.get("search") || "");
   }, [searchParams]);
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [user, setUser] = useState<any>(null);
+
+  // Fetch user session
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then(res => res.json())
+      .then(data => {
+        if (data.authenticated) {
+          setUser(data);
+        } else {
+          setUser(null);
+        }
+      })
+      .catch(() => setUser(null));
+  }, []);
+
   const [cartCount, setCartCount] = useState(0);
   const [wishlist, setWishlist] = useState<Product[]>([]);
 
@@ -187,6 +205,11 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
   }, []);
 
   const toggleWishlist = useCallback((product: Product) => {
+    if (!user) {
+      toast.error("Please sign in to add to wishlist", { icon: "🔒" });
+      return;
+    }
+
     let updated: Product[];
     if (wishlist.some(item => item.id === product.id)) {
       updated = wishlist.filter(item => item.id !== product.id);
@@ -206,6 +229,11 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
   }, [wishlist]);
 
   const handleAddToCart = useCallback((product: Product) => {
+    if (!user) {
+      toast.error("Please sign in to add to cart", { icon: "🔒" });
+      return false;
+    }
+
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("yemnest_cart_items");
       let items: { product: Product; quantity: number }[] = [];
@@ -222,8 +250,16 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
 
       const existingIndex = items.findIndex((item) => item.product.id === product.id);
       if (existingIndex > -1) {
+        if (items[existingIndex].quantity + 1 > product.stockCount) {
+          toast.error(`You cannot add more. Only ${product.stockCount} in stock!`);
+          return;
+        }
         items[existingIndex].quantity += 1;
       } else {
+        if (product.stockCount < 1) {
+          toast.error("Out of stock!");
+          return;
+        }
         items.push({ product, quantity: 1 });
       }
 
@@ -253,8 +289,10 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
       // Dispatch global update event & open cart drawer
       window.dispatchEvent(new Event("yemnest_cart_updated"));
       window.dispatchEvent(new Event("yemnest_open_cart"));
+      return true;
     }
-  }, []);
+    return false;
+  }, [user]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {

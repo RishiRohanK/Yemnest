@@ -37,20 +37,17 @@ export default function SignInPage() {
           throw new Error(data.error || "Login failed.");
         }
         setSuccess(true);
-        localStorage.setItem("yemnest_user", JSON.stringify({ 
-          name: data.userName, 
-          id: data.userId, 
-          email: data.userEmail,
-          houseNo: data.houseNo,
-          addressLine1: data.addressLine1,
-          pincode: data.pincode,
-          phoneNumber: data.phoneNumber,
-          alternativeMobileNumber: data.alternativeMobileNumber
-        }));
-        window.dispatchEvent(new Event("yemnest_auth_updated"));
-        setTimeout(() => {
-          router.push("/shop");
-        }, 1500);
+        
+        if (data.isAdmin) {
+          setTimeout(() => {
+            router.push("/admin");
+          }, 1500);
+        } else {
+          window.dispatchEvent(new Event("yemnest_auth_updated"));
+          setTimeout(() => {
+            router.push("/shop");
+          }, 1500);
+        }
       })
       .catch((err: any) => {
         setError(err.message || "Something went wrong. Please try again.");
@@ -230,15 +227,17 @@ export default function SignInPage() {
             </form>
           )}
 
-          <div className="mt-8 pt-6 border-t border-zinc-200/50 text-center">
-            <span className="text-xs text-zinc-500 font-normal">New to Yemnest? </span>
-            <button
-              onClick={() => router.push("/signup")}
-              className="text-xs font-normal text-[#724D26] hover:text-[#5a3b1d] transition-colors border-b border-[#724D26]/40 pb-0.5"
-            >
-              Create Account
-            </button>
-          </div>
+          {!success && (
+            <div className="mt-8 pt-6 border-t border-zinc-200/50 text-center">
+              <span className="text-xs text-zinc-500 font-normal">New to Yemnest? </span>
+              <button
+                onClick={() => router.push("/signup")}
+                className="text-xs font-normal text-[#724D26] hover:text-[#5a3b1d] transition-colors border-b border-[#724D26]/40 pb-0.5"
+              >
+                Create Account
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -39,31 +39,29 @@ export default function ProfilePage() {
   const [addressSaveSuccess, setAddressSaveSuccess] = useState(false);
 
   useEffect(() => {
-    // Basic sync from localStorage based on how auth is mocked
-    const storedUser = localStorage.getItem("yemnest_user");
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser);
-        setUser(parsed);
-        setProfileForm({
-          name: parsed.name || "",
-          email: parsed.email || "",
-        });
-        setAddressForm({
-          houseNo: parsed.houseNo || "",
-          addressLine1: parsed.addressLine1 || "",
-          pincode: parsed.pincode || "",
-          phoneNumber: parsed.phoneNumber || "",
-          alternativeMobileNumber: parsed.alternativeMobileNumber || ""
-        });
-      } catch (e) {
-        setUser({ name: "User", email: "user@yemnest.com" });
-      }
-    } else {
-      // Mock fallback if user is logged in
-      setUser({ name: "Gnapika", email: "gnapikakada47@gmail.com" });
-    }
-  }, []);
+    fetch("/api/auth/me")
+      .then(res => res.json())
+      .then(data => {
+        if (data.authenticated && data.role === "user" && data.user) {
+          const parsed = data.user;
+          setUser(parsed);
+          setProfileForm({
+            name: parsed.name || "",
+            email: parsed.email || "",
+          });
+          setAddressForm({
+            houseNo: parsed.houseNo || "",
+            addressLine1: parsed.addressLine1 || "",
+            pincode: parsed.pincode || "",
+            phoneNumber: parsed.phoneNumber || "",
+            alternativeMobileNumber: parsed.alternativeMobileNumber || ""
+          });
+        } else {
+          router.push("/signin");
+        }
+      })
+      .catch(() => router.push("/signin"));
+  }, [router]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,10 +90,9 @@ export default function ProfilePage() {
         throw new Error(data.error || "Failed to update profile details");
       }
       
-      // Update local state and localStorage
+      // Update local state
       const updatedUser = { ...user, ...data.user };
       setUser(updatedUser);
-      localStorage.setItem("yemnest_user", JSON.stringify(updatedUser));
       // Dispatch an event to update the navbar name instantly
       window.dispatchEvent(new Event("yemnest_auth_updated"));
       
@@ -137,10 +134,9 @@ export default function ProfilePage() {
         throw new Error(data.error || "Failed to update address");
       }
       
-      // Update local state and localStorage
+      // Update local state
       const updatedUser = { ...user, ...data.user };
       setUser(updatedUser);
-      localStorage.setItem("yemnest_user", JSON.stringify(updatedUser));
       
       setAddressSaveSuccess(true);
       setIsEditingAddress(false);
@@ -386,10 +382,12 @@ export default function ProfilePage() {
         <div className="flex gap-4">
           <button 
             onClick={() => {
-              localStorage.removeItem("yemnest_user");
-              window.location.href = "/";
+              fetch("/api/auth/logout", { method: "POST" }).then(() => {
+                window.dispatchEvent(new Event("yemnest_auth_updated"));
+                router.push("/");
+              });
             }}
-            className="px-6 py-3 border border-zinc-300 rounded-full text-sm font-semibold text-zinc-700 hover:bg-zinc-100 transition-colors"
+            className="w-full flex items-center justify-between p-4 bg-[#FAF9F6] border border-zinc-200/50 hover:bg-zinc-100 transition-colors rounded-none group"
           >
             Sign Out
           </button>

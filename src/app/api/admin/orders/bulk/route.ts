@@ -18,10 +18,15 @@ export async function PATCH(request: Request) {
       where: { id: { in: orderIds } },
     });
 
+    const updateData: any = { status };
+    if (status === "DELIVERED") {
+      updateData.deliveredAt = new Date();
+    }
+
     // Update statuses in the database
     await prisma.order.updateMany({
       where: { id: { in: orderIds } },
-      data: { status },
+      data: updateData,
     });
 
     // Send emails in the background

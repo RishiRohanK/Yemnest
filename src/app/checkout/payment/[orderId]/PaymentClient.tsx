@@ -157,17 +157,17 @@ export default function PaymentClient({ order }: { order: any }) {
 
               <h4 className="text-xs text-zinc-400 uppercase tracking-widest mb-4">Or Pay via App</h4>
               <div className="grid grid-cols-2 gap-3 mb-6 w-full">
-                <a href={`tez://upi/pay?pa=${merchantUpiId}&pn=${encodeURIComponent(merchantName)}&am=${amountStr}&cu=INR`} className="flex flex-col items-center justify-center gap-2 p-3 border border-zinc-200 hover:border-[#106636] transition-colors rounded-lg">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/f/f2/Google_Pay_Logo.svg" alt="GPay" className="h-5" />
+                <a href={`tez://upi/pay?pa=${merchantUpiId}&pn=${encodeURIComponent(merchantName)}&am=${amountStr}&cu=INR`} className="flex flex-col items-center justify-center gap-2 p-3 border border-zinc-200 hover:border-[#106636] transition-colors rounded-lg relative h-16">
+                  <Image src="https://upload.wikimedia.org/wikipedia/commons/f/f2/Google_Pay_Logo.svg" alt="GPay" fill className="object-contain p-2" unoptimized />
                 </a>
-                <a href={`phonepe://pay?pa=${merchantUpiId}&pn=${encodeURIComponent(merchantName)}&am=${amountStr}&cu=INR`} className="flex flex-col items-center justify-center gap-2 p-3 border border-zinc-200 hover:border-[#106636] transition-colors rounded-lg">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/7/71/PhonePe_Logo.svg" alt="PhonePe" className="h-6" />
+                <a href={`phonepe://pay?pa=${merchantUpiId}&pn=${encodeURIComponent(merchantName)}&am=${amountStr}&cu=INR`} className="flex flex-col items-center justify-center gap-2 p-3 border border-zinc-200 hover:border-[#106636] transition-colors rounded-lg relative h-16">
+                  <Image src="https://upload.wikimedia.org/wikipedia/commons/7/71/PhonePe_Logo.svg" alt="PhonePe" fill className="object-contain p-2" unoptimized />
                 </a>
-                <a href={`paytmmp://pay?pa=${merchantUpiId}&pn=${encodeURIComponent(merchantName)}&am=${amountStr}&cu=INR`} className="flex flex-col items-center justify-center gap-2 p-3 border border-zinc-200 hover:border-[#106636] transition-colors rounded-lg">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/2/24/Paytm_Logo_%28standalone%29.svg" alt="Paytm" className="h-4" />
+                <a href={`paytmmp://pay?pa=${merchantUpiId}&pn=${encodeURIComponent(merchantName)}&am=${amountStr}&cu=INR`} className="flex flex-col items-center justify-center gap-2 p-3 border border-zinc-200 hover:border-[#106636] transition-colors rounded-lg relative h-16">
+                  <Image src="https://upload.wikimedia.org/wikipedia/commons/2/24/Paytm_Logo_%28standalone%29.svg" alt="Paytm" fill className="object-contain p-2" unoptimized />
                 </a>
-                <a href={upiLink} className="flex flex-col items-center justify-center gap-2 p-3 border border-zinc-200 hover:border-[#106636] transition-colors rounded-lg">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" alt="Other UPI" className="h-5" />
+                <a href={upiLink} className="flex flex-col items-center justify-center gap-2 p-3 border border-zinc-200 hover:border-[#106636] transition-colors rounded-lg relative h-16">
+                  <Image src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" alt="Other UPI" fill className="object-contain p-2" unoptimized />
                 </a>
               </div>
 

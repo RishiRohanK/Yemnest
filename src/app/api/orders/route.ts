@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/mailer";
+import { invalidateProductCache } from "@/lib/product-cache";
 
 export async function POST(request: Request) {
   try {
@@ -59,6 +60,8 @@ export async function POST(request: Request) {
           }
         }
       }
+      
+      invalidateProductCache();
     } catch (err) {
       console.error("Failed to decrement stock:", err);
     }

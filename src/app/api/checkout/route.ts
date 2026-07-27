@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { invalidateProductCache } from "@/lib/product-cache";
 
 export async function POST(req: Request) {
   try {
@@ -52,6 +53,31 @@ export async function POST(req: Request) {
         status: "PENDING"
       }
     });
+
+    // Decrement stock for each purchased item
+    try {
+      const parsedItems = typeof items === "string" ? JSON.parse(items) : items;
+      if (Array.isArray(parsedItems)) {
+        for (const item of parsedItems) {
+          const productId = item.product?.id || item.id;
+          if (productId && item.quantity) {
+            await prisma.product.update({
+              where: { id: productId },
+              data: {
+                stockCount: {
+                  decrement: item.quantity
+                }
+              }
+            });
+          }
+        }
+      }
+      
+      // Invalidate the cache so the frontend immediately shows the updated stock
+      invalidateProductCache();
+    } catch (err) {
+      console.error("Failed to decrement stock during checkout:", err);
+    }
 
     // Send WhatsApp order confirmation asynchronously
     sendWhatsAppMessage({

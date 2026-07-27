@@ -74,6 +74,12 @@ async function fetchFromDb(): Promise<Product[]> {
 }
 
 export async function getProducts(): Promise<Product[]> {
+  // In development, Next.js hot-reloading causes module isolation issues, 
+  // so we skip the memory cache to ensure fresh data always.
+  if (process.env.NODE_ENV === "development") {
+    return await fetchFromDb();
+  }
+
   const now = Date.now();
   if (_cache && now - _cacheTimestamp < CACHE_TTL_MS) {
     return _cache;

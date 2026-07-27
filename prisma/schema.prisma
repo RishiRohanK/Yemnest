@@ -44,6 +44,8 @@ model Order {
   transactionId           String?
   paymentScreenshot       String?
   createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  deliveredAt             DateTime?
 }
 
 model Product {
@@ -61,6 +63,7 @@ model Product {
   category    String   @default("Atelier Specialties")
   dietary     String   @default("[\"Vegetarian\", \"Contains Nuts\"]")
   createdAt   DateTime @default(now())
+  reviews     Review[]
 }
 
 model Coupon {
@@ -70,4 +73,16 @@ model Coupon {
   isActive           Boolean  @default(true)
   uses               Int      @default(0)
   createdAt          DateTime @default(now())
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  productId String
+  userId    String
+  userName  String
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }

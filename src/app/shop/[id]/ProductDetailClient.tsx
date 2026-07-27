@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { toast } from "react-hot-toast";
 import Link from "next/link";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -10,6 +11,14 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
+}
+
+interface Review {
+  id: string;
+  rating: number;
+  comment: string;
+  userName: string;
+  createdAt: string;
 }
 
 interface Product {
@@ -25,9 +34,16 @@ interface Product {
   image2?: string;
   image3?: string;
   image4?: string;
+  reviews?: Review[];
 }
 
-export default function ProductDetailClient({ product }: { product: Product }) {
+export default function ProductDetailClient({ 
+  product, 
+  relatedProducts = [] 
+}: { 
+  product: Product;
+  relatedProducts?: Product[];
+}) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -40,6 +56,12 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const shareMenuRef = useRef<HTMLDivElement>(null);
+  
+  const [user, setUser] = useState<{ id: string, name: string } | null>(null);
+  const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState("");
+  const [reviewSuccess, setReviewSuccess] = useState(false);
 
   useEffect(() => {
     const syncWishlist = () => {
@@ -58,6 +80,17 @@ export default function ProductDetailClient({ product }: { product: Product }) {
       }
     };
     syncWishlist();
+
+    fetch("/api/auth/me")
+      .then(res => res.json())
+      .then(data => {
+        if (data.authenticated && data.user) {
+          setUser({ id: data.user.id, name: data.user.name });
+        } else {
+          setUser(null);
+        }
+      })
+      .catch(() => setUser(null));
     window.addEventListener("yemnest_wishlist_updated", syncWishlist);
     return () => window.removeEventListener("yemnest_wishlist_updated", syncWishlist);
   }, []);
@@ -77,6 +110,11 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   }, [showShareMenu]);
 
   const toggleWishlist = () => {
+    if (!user) {
+      toast.error("Please sign in to add to wishlist", { icon: "🔒" });
+      return;
+    }
+
     let updated;
     if (wishlist.some(item => item.id === product.id)) {
       updated = wishlist.filter(item => item.id !== product.id);
@@ -116,6 +154,11 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   }, { scope: containerRef });
 
   const handleAddToCart = () => {
+    if (!user) {
+      toast.error("Please sign in to add to cart", { icon: "🔒" });
+      return false;
+    }
+
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("yemnest_cart_items");
       let items: { product: Product; quantity: number }[] = [];
@@ -132,8 +175,16 @@ export default function ProductDetailClient({ product }: { product: Product }) {
 
       const existingIndex = items.findIndex((item) => item.product.id === product.id);
       if (existingIndex > -1) {
+        if (items[existingIndex].quantity + quantity > product.stockCount) {
+          toast.error(`You cannot add more. Only ${product.stockCount} in stock!`);
+          return;
+        }
         items[existingIndex].quantity += quantity;
       } else {
+        if (quantity > product.stockCount) {
+          toast.error(`You cannot add more. Only ${product.stockCount} in stock!`);
+          return;
+        }
         items.push({ product, quantity });
       }
 
@@ -155,11 +206,51 @@ export default function ProductDetailClient({ product }: { product: Product }) {
       localStorage.setItem("yemnest_cart_count", totalCount.toString());
 
       window.dispatchEvent(new Event("yemnest_cart_updated"));
-      // window.dispatchEvent(new Event("yemnest_open_cart"));
+      window.dispatchEvent(new Event("yemnest_open_cart"));
+      
+      setCartToast(true);
+      setTimeout(() => setCartToast(false), 3000);
+      return true;
     }
+    return false;
+  };
 
-    setCartToast(true);
-    setTimeout(() => setCartToast(false), 3000);
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    
+    setIsSubmittingReview(true);
+    setReviewError("");
+    setReviewSuccess(false);
+
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId: product.id,
+          userId: user.id,
+          userName: user.name,
+          rating: newReview.rating,
+          comment: newReview.comment
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to submit review");
+
+      setReviewSuccess(true);
+      setNewReview({ rating: 5, comment: "" });
+      // To show the new review immediately without reloading, 
+      // you could optionally append `data` to `product.reviews` here.
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (err: any) {
+      setReviewError(err.message);
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
   return (
@@ -275,14 +366,26 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                 <div className="flex items-center border border-zinc-300 bg-white">
                   <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-4 py-3 text-zinc-500 hover:text-black transition-colors">-</button>
                   <span className="w-10 text-center text-sm font-medium">{quantity}</span>
-                  <button onClick={() => setQuantity(quantity + 1)} className="px-4 py-3 text-zinc-500 hover:text-black transition-colors">+</button>
+                  <button 
+                    onClick={() => {
+                      if (quantity >= product.stockCount) {
+                        toast.error(`Only ${product.stockCount} items left in stock!`);
+                      } else {
+                        setQuantity(quantity + 1);
+                      }
+                    }} 
+                    className="px-4 py-3 text-zinc-500 hover:text-black transition-colors"
+                  >
+                    +
+                  </button>
                 </div>
 
                 <button
                   onClick={() => {
-                    handleAddToCart();
-                    setIsAdding(true);
-                    setTimeout(() => setIsAdding(false), 2000);
+                    if (handleAddToCart()) {
+                      setIsAdding(true);
+                      setTimeout(() => setIsAdding(false), 2000);
+                    }
                   }}
                   disabled={product.stockCount === 0}
                   className={`flex-1 text-white text-xs uppercase tracking-widest transition-colors disabled:bg-zinc-300 disabled:cursor-not-allowed shadow-md ${isAdding ? "bg-[#106636]" : "bg-[#106636] hover:bg-zinc-900"}`}
@@ -393,36 +496,86 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           </div>
         </div>
 
-        {/* Reviews Section Mock */}
+        {/* Real Reviews Section */}
         <div className="reveal-el max-w-4xl mx-auto border-t border-zinc-200 pt-16 mb-24">
           <h2 className="text-2xl font-light text-zinc-900 text-center mb-12">Client Testimonials</h2>
+          
+          <div className="mb-12 border border-zinc-100 bg-white p-6 shadow-sm">
+            <h3 className="text-lg font-semibold mb-4">Leave a Review</h3>
+            {user ? (
+              <form onSubmit={handleSubmitReview} className="space-y-4">
+                {reviewError && <p className="text-red-600 text-xs">{reviewError}</p>}
+                {reviewSuccess && <p className="text-[#106636] text-xs">Review submitted successfully!</p>}
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-2">Rating</label>
+                  <select 
+                    value={newReview.rating} 
+                    onChange={e => setNewReview({...newReview, rating: Number(e.target.value)})}
+                    className="w-full md:w-32 px-3 py-2 border border-zinc-200 text-sm focus:outline-none focus:border-[#106636]"
+                  >
+                    <option value={5}>★★★★★ (5)</option>
+                    <option value={4}>★★★★☆ (4)</option>
+                    <option value={3}>★★★☆☆ (3)</option>
+                    <option value={2}>★★☆☆☆ (2)</option>
+                    <option value={1}>★☆☆☆☆ (1)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-2">Comment</label>
+                  <textarea 
+                    value={newReview.comment}
+                    onChange={e => setNewReview({...newReview, comment: e.target.value})}
+                    required
+                    rows={3}
+                    className="w-full px-3 py-2 border border-zinc-200 text-sm focus:outline-none focus:border-[#106636] resize-none"
+                    placeholder="Tell us what you thought..."
+                  />
+                </div>
+                <button type="submit" disabled={isSubmittingReview} className="bg-[#106636] text-white px-6 py-2 text-xs uppercase tracking-widest hover:bg-zinc-900 transition-colors disabled:opacity-50">
+                  {isSubmittingReview ? "Submitting..." : "Submit Review"}
+                </button>
+              </form>
+            ) : (
+              <p className="text-sm text-zinc-500">Please <Link href="/signin" className="text-[#106636] underline">sign in</Link> and purchase this item to leave a review.</p>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-white p-8 border border-zinc-100 shadow-sm">
-              <div className="text-[#106636] mb-3">★★★★★</div>
-              <h4 className="text-sm font-semibold mb-2">Absolute Perfection</h4>
-              <p className="text-xs text-zinc-500 italic mb-4">&quot;The depth of flavor is unparalleled. You can truly taste the quality of the cocoa butter. This is not just chocolate, it&apos;s an experience.&quot;</p>
-              <span className="text-[10px] text-zinc-400 uppercase tracking-widest">— Eleanor C.</span>
-            </div>
-            <div className="bg-white p-8 border border-zinc-100 shadow-sm">
-              <div className="text-[#106636] mb-3">★★★★★</div>
-              <h4 className="text-sm font-semibold mb-2">My Go-To Gift</h4>
-              <p className="text-xs text-zinc-500 italic mb-4">&quot;I bought the Kunafa bar and it was mind-blowing. The packaging is luxurious and the crunch is perfect. Worth every penny.&quot;</p>
-              <span className="text-[10px] text-zinc-400 uppercase tracking-widest">— Julian R.</span>
-            </div>
+            {product.reviews && product.reviews.length > 0 ? (
+              product.reviews.map((review: Review) => (
+                <div key={review.id} className="bg-white p-8 border border-zinc-100 shadow-sm">
+                  <div className="text-[#106636] mb-3">{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</div>
+                  <p className="text-xs text-zinc-500 italic mb-4">&quot;{review.comment}&quot;</p>
+                  <div className="flex justify-between items-center text-[10px] text-zinc-400 uppercase tracking-widest">
+                    <span>— {review.userName}</span>
+                    <span>{new Date(review.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-zinc-500 col-span-2 text-center">No reviews yet. Be the first to review!</p>
+            )}
           </div>
         </div>
 
-        {/* Related Pairings Banner */}
-        <div className="reveal-el relative h-64 overflow-hidden flex items-center justify-center text-center bg-zinc-900 mt-12 group cursor-pointer">
-          <Image src="https://ik.imagekit.io/dypkhqxip/collectiosn5" fill className="object-cover opacity-40 group-hover:scale-105 transition-transform duration-1000" alt="Discover More" />
-          <div className="relative z-10 px-4">
-            <span className="text-[#F5E6C4] text-[10px] uppercase tracking-[0.3em] block mb-2">Curated For You</span>
-            <h3 className="text-2xl text-white font-light tracking-wide mb-6">Explore Related Masterpieces</h3>
-            <Link href="/collections" className="inline-block border-b border-white pb-1 text-xs text-white uppercase tracking-widest hover:text-[#F5E6C4] hover:border-[#F5E6C4] transition-colors">
-              Back to Collections
-            </Link>
+        {/* Related Products */}
+        {relatedProducts && relatedProducts.length > 0 && (
+          <div className="reveal-el max-w-7xl mx-auto border-t border-zinc-200 pt-16 mb-24">
+            <h2 className="text-2xl font-light text-zinc-900 text-center mb-12">You Might Also Like</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {relatedProducts.map(rp => (
+                <Link href={`/shop/${rp.id}`} key={rp.id} className="group block">
+                  <div className="relative aspect-[4/5] bg-zinc-100 overflow-hidden mb-4">
+                    <Image src={rp.image1} alt={rp.name} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-zinc-900 mb-1">{rp.name}</h3>
+                  <p className="text-xs text-zinc-500 mb-2">{rp.subLine}</p>
+                  <p className="text-sm text-[#106636] font-medium">₹{rp.price.toFixed(2)}</p>
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
 

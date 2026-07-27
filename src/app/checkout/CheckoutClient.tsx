@@ -34,20 +34,25 @@ export default function CheckoutClient() {
       if (storedCart) {
         setCartItems(JSON.parse(storedCart));
       }
-      const storedUser = localStorage.getItem("yemnest_user");
-      if (storedUser) {
-        const u = JSON.parse(storedUser);
-        setUser(u);
-        setFormData((prev) => ({
-          ...prev,
-          name: u.name || "",
-          email: u.email || "",
-          phone: u.phoneNumber || "",
-          houseNo: u.houseNo || "",
-          addressLine1: u.addressLine1 || "",
-          pincode: u.pincode || "",
-        }));
-      }
+      
+      fetch("/api/auth/me")
+        .then(res => res.json())
+        .then(data => {
+          if (data.authenticated && data.role === "user" && data.user) {
+            const u = data.user;
+            setUser(u);
+            setFormData((prev) => ({
+              ...prev,
+              name: u.name || "",
+              email: u.email || "",
+              phone: u.phoneNumber || "",
+              houseNo: u.houseNo || "",
+              addressLine1: u.addressLine1 || "",
+              pincode: u.pincode || "",
+            }));
+          }
+        })
+        .catch(err => console.error("Failed to fetch user session", err));
     }
   }, []);
 

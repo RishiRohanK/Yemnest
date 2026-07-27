@@ -1,8 +1,10 @@
 "use client";
 
 import { useRef, useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { toast } from "react-hot-toast";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -36,6 +38,21 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
   const [sortBy, setSortBy] = useState("Newest");
   const [priceRange, setPriceRange] = useState<number>(5000);
   const [showInStock, setShowInStock] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  // Fetch user session
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then(res => res.json())
+      .then(data => {
+        if (data.authenticated) {
+          setUser(data);
+        } else {
+          setUser(null);
+        }
+      })
+      .catch(() => setUser(null));
+  }, []);
 
   // State for Quick View
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
@@ -88,6 +105,12 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
   const toggleWishlist = (product: Product, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!user) {
+      toast.error("Please sign in to add to wishlist", { icon: "🔒" });
+      return;
+    }
+
     let updated;
     
     if (wishlist.some(item => item.id === product.id)) {
@@ -216,6 +239,11 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
 
   // Handle Cart
   const handleAddToCart = (product: Product, quantity: number = 1) => {
+    if (!user) {
+      toast.error("Please sign in to add to cart", { icon: "🔒" });
+      return false;
+    }
+
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("yemnest_cart_items");
       let items: { product: Product; quantity: number }[] = [];
@@ -232,8 +260,16 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
 
       const existingIndex = items.findIndex((item) => item.product.id === product.id);
       if (existingIndex > -1) {
+        if (items[existingIndex].quantity + quantity > product.stockCount) {
+          toast.error(`You cannot add more. Only ${product.stockCount} in stock!`);
+          return;
+        }
         items[existingIndex].quantity += quantity;
       } else {
+        if (quantity > product.stockCount) {
+          toast.error(`You cannot add more. Only ${product.stockCount} in stock!`);
+          return;
+        }
         items.push({ product, quantity });
       }
 
@@ -256,14 +292,14 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
       localStorage.setItem("yemnest_cart_count", totalCount.toString());
 
       window.dispatchEvent(new Event("yemnest_cart_updated"));
+      window.dispatchEvent(new Event("yemnest_open_cart"));
       
       setCartToastName(product.name);
       setCartToast(true);
       setTimeout(() => setCartToast(false), 3000);
-      
-      // Optionally open global cart drawer
-      // window.dispatchEvent(new Event("yemnest_open_cart"));
+      return true;
     }
+    return false;
   };
 
   const openQuickView = (product: Product) => {
@@ -506,11 +542,12 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          handleAddToCart(product, 1);
-                          setAddedCardIds(prev => [...prev, product.id]);
-                          setTimeout(() => {
-                            setAddedCardIds(prev => prev.filter(id => id !== product.id));
-                          }, 2000);
+                          if (handleAddToCart(product)) {
+                            setAddedCardIds(prev => [...prev, product.id]);
+                            setTimeout(() => {
+                              setAddedCardIds(prev => prev.filter(id => id !== product.id));
+                            }, 2000);
+                          }
                         }}
                         disabled={product.stockCount === 0}
                         className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${addedCardIds.includes(product.id) ? "bg-[#106636] text-white" : "bg-zinc-100 hover:bg-[#106636] text-zinc-900 hover:text-white"}`}
@@ -601,7 +638,18 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
                   <div className="flex items-center border border-zinc-300">
                     <button onClick={() => setQuickViewQuantity(Math.max(1, quickViewQuantity - 1))} className="px-3 py-2 text-zinc-500 hover:text-black">-</button>
                     <span className="w-8 text-center text-sm font-medium">{quickViewQuantity}</span>
-                    <button onClick={() => setQuickViewQuantity(quickViewQuantity + 1)} className="px-3 py-2 text-zinc-500 hover:text-black">+</button>
+                    <button 
+                      onClick={() => {
+                        if (quickViewQuantity >= quickViewProduct.stockCount) {
+                          toast.error(`Only ${quickViewProduct.stockCount} items left in stock!`);
+                        } else {
+                          setQuickViewQuantity(quickViewQuantity + 1);
+                        }
+                      }} 
+                      className="px-3 py-2 text-zinc-500 hover:text-black"
+                    >
+                      +
+                    </button>
                   </div>
                   <span className="text-xs text-zinc-400">
                     {quickViewProduct.stockCount > 0 ? `${quickViewProduct.stockCount} available` : "Out of stock"}
@@ -611,9 +659,10 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
                 <div className="flex gap-4">
                   <button 
                     onClick={() => {
-                      handleAddToCart(quickViewProduct, quickViewQuantity);
-                      setIsAdding(true);
-                      setTimeout(() => setIsAdding(false), 2000);
+                      if (handleAddToCart(quickViewProduct, quickViewQuantity)) {
+                        setIsAdding(true);
+                        setTimeout(() => setIsAdding(false), 2000);
+                      }
                     }}
                     disabled={quickViewProduct.stockCount === 0}
                     className={`flex-1 text-white text-xs uppercase tracking-widest py-3.5 transition-colors disabled:bg-zinc-300 disabled:cursor-not-allowed ${isAdding ? "bg-[#106636]" : "bg-[#106636] hover:bg-zinc-900"}`}

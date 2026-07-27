@@ -15,6 +15,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check if this is the admin login
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (adminEmail && adminPassword && email === adminEmail && password === adminPassword) {
+      const { setSessionCookie } = await import("@/lib/auth");
+      await setSessionCookie({ role: "admin", email });
+      return NextResponse.json(
+        { message: "Admin authenticated successful", isAdmin: true },
+        { status: 200 }
+      );
+    }
+
     // Find user in DB
     const user = await prisma.user.findUnique({
       where: { email },
@@ -27,8 +40,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // Verify password (support both legacy plain text and new bcrypt hashes)
+    let isPasswordValid = false;
+    if (user.password.startsWith("$2a$") || user.password.startsWith("$2b$")) {
+      isPasswordValid = await bcrypt.compare(password, user.password);
+    } else {
+      isPasswordValid = password === user.password;
+    }
 
     if (!isPasswordValid) {
       return NextResponse.json(
@@ -36,6 +54,19 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
+
+    const { setSessionCookie } = await import("@/lib/auth");
+    await setSessionCookie({ 
+      role: "user", 
+      id: user.id, 
+      email: user.email, 
+      name: user.name,
+      houseNo: user.houseNo,
+      addressLine1: user.addressLine1,
+      pincode: user.pincode,
+      phoneNumber: user.phoneNumber,
+      alternativeMobileNumber: user.alternativeMobileNumber
+    });
 
     return NextResponse.json(
       { 

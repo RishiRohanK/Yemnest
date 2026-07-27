@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "react-hot-toast";
 
 interface UserState {
   name: string;
@@ -125,16 +126,20 @@ export default function Navbar() {
 
       // Auth sync
       const loadUser = () => {
-        const storedUser = localStorage.getItem("yemnest_user");
-        if (storedUser) {
-          try {
-            setUser(JSON.parse(storedUser));
-          } catch (e) {
-            setUser(null);
-          }
-        } else {
-          setUser(null);
-        }
+        fetch("/api/auth/me")
+          .then(res => res.json())
+          .then(data => {
+            if (data.authenticated && data.role === "user" && data.user) {
+              setUser({
+                id: data.user.id,
+                name: data.user.name,
+                email: data.user.email
+              });
+            } else {
+              setUser(null);
+            }
+          })
+          .catch(() => setUser(null));
       };
 
       loadUser();
@@ -179,8 +184,13 @@ export default function Navbar() {
   const updateCartQuantity = useCallback((productId: string, increment: boolean) => {
     const updated = cartItems.map((item) => {
       if (item?.product?.id === productId) {
+        const maxStock = item.product.stockCount || 100; // fallback if stockCount is missing
+        if (increment && item.quantity >= maxStock) {
+          toast.error(`Only ${maxStock} items left in stock!`);
+          return item;
+        }
         const newQty = increment ? item.quantity + 1 : item.quantity - 1;
-        return { ...item, quantity: Math.max(1, newQty) };
+        return { ...item, quantity: increment ? Math.min(newQty, maxStock) : Math.max(1, newQty) };
       }
       return item;
     });
@@ -220,12 +230,12 @@ export default function Navbar() {
     router.push("/checkout");
   };
 
-  if (pathname && pathname.startsWith("/admin")) return null;
-
   const cartTotal = useMemo(() => cartItems.reduce(
     (sum, item) => sum + Number(item?.product?.price || 0) * Number(item?.quantity || 1),
     0
   ), [cartItems]);
+
+  if (pathname && pathname.startsWith("/admin")) return null;
 
   return (
     <nav className="relative sticky top-0 z-[100] w-full bg-[#FEFEFD] border-b border-zinc-200/60 shadow-sm rounded-none">
@@ -267,6 +277,12 @@ export default function Navbar() {
               className="text-sm font-normal tracking-wide text-zinc-800 hover:text-[#106636] transition-colors duration-200 rounded-none"
             >
               Cocoa Journey
+            </Link>
+            <Link
+              href="/track"
+              className="text-sm font-normal tracking-wide text-zinc-800 hover:text-[#106636] transition-colors duration-200 rounded-none"
+            >
+              Track Order
             </Link>
           </div>
 
@@ -368,9 +384,10 @@ export default function Navbar() {
                     <div className="border-t border-zinc-100/80 mt-2 pt-2">
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
                           setIsProfileDropdownOpen(false);
-                          localStorage.removeItem("yemnest_user");
+                          localStorage.removeItem("yemnest_user"); // fallback for old data
+                          await fetch("/api/auth/logout", { method: "POST" });
                           window.dispatchEvent(new Event("yemnest_auth_updated"));
                           window.location.href = "/";
                         }}
@@ -422,9 +439,11 @@ export default function Navbar() {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
-              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-none bg-red-500 text-[9px] font-normal text-white">
-                {wishlistItems.length}
-              </span>
+              {user && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-none bg-red-500 text-[9px] font-normal text-white">
+                  {wishlistItems.length}
+                </span>
+              )}
             </button>
 
             {/* Cart Icon */}
@@ -448,9 +467,11 @@ export default function Navbar() {
                 />
               </svg>
               {/* Badge (Sharp cornered) */}
-              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-none bg-[#724D26] text-[9px] font-normal text-white">
-                {cartCount}
-              </span>
+              {user && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-none bg-[#724D26] text-[9px] font-normal text-white">
+                  {cartCount}
+                </span>
+              )}
             </button>
           </div>
 
@@ -472,9 +493,11 @@ export default function Navbar() {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
-              <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-none bg-red-500 text-[8px] font-normal text-white">
-                {wishlistItems.length}
-              </span>
+              {user && (
+                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-none bg-red-500 text-[8px] font-normal text-white">
+                  {wishlistItems.length}
+                </span>
+              )}
             </button>
 
             {/* Real-time Cart Badge directly on Mobile Header */}
@@ -497,9 +520,11 @@ export default function Navbar() {
                   d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.7 3.032-7.1H5.882m0 0h14.736M7.5 17.25a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm12.75 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"
                 />
               </svg>
-              <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-none bg-[#724D26] text-[8px] font-normal text-white">
-                {cartCount}
-              </span>
+              {user && (
+                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-none bg-[#724D26] text-[8px] font-normal text-white">
+                  {cartCount}
+                </span>
+              )}
             </button>
 
             <button
@@ -612,6 +637,12 @@ export default function Navbar() {
             >
               Cocoa Journey
             </Link>
+            <Link
+              href="/track"
+              className="block rounded-none px-3 py-2 text-base font-normal tracking-wide text-zinc-800 hover:bg-zinc-100 hover:text-[#106636] transition-colors"
+            >
+              Track Order
+            </Link>
 
             {/* Mobile Actions divider */}
             <div className="border-t border-zinc-200/60 my-2 pt-2 flex flex-col gap-2 rounded-none">
@@ -642,9 +673,11 @@ export default function Navbar() {
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.7 3.032-7.1H5.882m0 0h14.736M7.5 17.25a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm12.75 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
                     </svg>
-                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-none bg-[#724D26] text-[8px] font-normal text-white">
-                      {cartCount}
-                    </span>
+                    {user && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-none bg-[#724D26] text-[8px] font-normal text-white">
+                        {cartCount}
+                      </span>
+                    )}
                   </div>
                   <span className="text-sm font-normal">Cart</span>
                 </button>
@@ -706,9 +739,10 @@ export default function Navbar() {
                         </a>
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={async () => {
                             setIsMobileMenuOpen(false);
-                            localStorage.removeItem("yemnest_user");
+                            localStorage.removeItem("yemnest_user"); // fallback
+                            await fetch("/api/auth/logout", { method: "POST" });
                             window.dispatchEvent(new Event("yemnest_auth_updated"));
                             window.location.href = "/";
                           }}
@@ -772,6 +806,17 @@ export default function Navbar() {
                 <div className="py-12 text-center text-[#106636] bg-green-50 border border-green-200 animate-fade-in">
                   <p className="text-sm font-medium uppercase tracking-wider">Order Placed Successfully!</p>
                   <p className="text-[10px] text-zinc-500 mt-1">Redirecting you to WhatsApp to complete checkout...</p>
+                </div>
+              ) : !user ? (
+                <div className="text-center py-16">
+                  <p className="text-xs text-zinc-500 mb-3">Please sign in to view your cart.</p>
+                  <Link
+                    href="/signin"
+                    onClick={() => setIsCartOpen(false)}
+                    className="inline-block px-6 py-2 bg-[#106636] hover:bg-[#0c4f29] text-white text-xs uppercase tracking-wider font-semibold transition-colors"
+                  >
+                    Sign In
+                  </Link>
                 </div>
               ) : cartItems.length === 0 ? (
                 <div className="text-center py-16">
@@ -853,7 +898,7 @@ export default function Navbar() {
             </div>
 
             {/* Drawer Checkout Footer */}
-            {!checkoutSuccess && cartItems.length > 0 && (
+            {!checkoutSuccess && cartItems.length > 0 && user && (
               <div className="border-t border-zinc-200 pt-4 mt-4 space-y-4">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-zinc-500">Total Price</span>
@@ -864,7 +909,7 @@ export default function Navbar() {
                   onClick={handlePlaceOrder}
                   className="w-full py-3 bg-[#106636] hover:bg-[#0c4f29] text-white text-xs uppercase tracking-wider font-semibold rounded-none transition-colors"
                 >
-                  Proceed to Checkout
+                  {checkoutLoading ? "Processing..." : "Proceed to Checkout"}
                 </button>
               </div>
             )}
@@ -893,15 +938,26 @@ export default function Navbar() {
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-              {wishlistItems.length === 0 ? (
+              {!user ? (
+                <div className="text-center py-16">
+                  <p className="text-xs text-zinc-500 mb-3">Please sign in to view your wishlist.</p>
+                  <Link
+                    href="/signin"
+                    onClick={() => setIsWishlistOpen(false)}
+                    className="inline-block px-6 py-2 bg-red-500 hover:bg-red-600 text-white text-xs uppercase tracking-wider font-semibold transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                </div>
+              ) : wishlistItems.length === 0 ? (
                 <div className="text-center py-16">
                   <p className="text-xs text-zinc-400">Your wishlist is empty.</p>
                   <Link
                     href="/shop"
                     onClick={() => setIsWishlistOpen(false)}
-                    className="text-xs text-[#724D26] underline hover:text-[#5a3b1d] block mt-2"
+                    className="text-xs text-red-500 underline hover:text-red-700 block mt-2"
                   >
-                    Go back to Shop
+                    Browse Shop
                   </Link>
                 </div>
               ) : (
