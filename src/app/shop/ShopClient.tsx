@@ -89,7 +89,13 @@ const ProductCard = memo(({ product, onAddToCart, priority, isWishlisted, onTogg
           </div>
           
           <Link href={`/shop/${product.id}`} className="group-hover:text-[#106636] transition-colors">
-            <h3 className="text-base font-bold text-zinc-900 leading-snug">{product.name}</h3>
+            <h3 className={`text-base leading-snug ${
+              product.name.toLowerCase().includes('raksha bandhan') 
+                ? 'font-serif text-[#8B0000] italic font-bold' 
+                : 'font-bold text-zinc-900'
+            }`}>
+              {product.name}
+            </h3>
           </Link>
           
           <p className="text-xs text-[#724D26] font-medium mt-1 mb-3 line-clamp-1">{product.subLine}</p>
@@ -226,7 +232,7 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
       localStorage.setItem("yemnest_wishlist", JSON.stringify(lightweightUpdated));
       window.dispatchEvent(new Event("yemnest_wishlist_updated"));
     }
-  }, [wishlist]);
+  }, [wishlist, user]);
 
   const handleAddToCart = useCallback((product: Product) => {
     if (!user) {

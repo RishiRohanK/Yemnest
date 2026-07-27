@@ -303,7 +303,11 @@ export default function ProductDetailClient({
             <span className="text-[#724D26] text-[10px] font-semibold uppercase tracking-widest block mb-3">
               {product.category}
             </span>
-            <h1 className="text-3xl sm:text-5xl font-light tracking-tight text-zinc-900 mb-2">
+            <h1 className={`text-3xl sm:text-5xl tracking-tight mb-2 ${
+              product.name.toLowerCase().includes('raksha bandhan') 
+                ? 'font-serif text-[#8B0000] italic font-medium' 
+                : 'font-light text-zinc-900'
+            }`}>
               {product.name}
             </h1>
             <p className="text-sm text-zinc-500 font-medium mb-6">

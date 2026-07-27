@@ -525,7 +525,13 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
                     </div>
                     
                     <Link href={`/shop/${product.id}`} className="group-hover:text-[#106636] transition-colors">
-                      <h3 className="text-base font-bold text-zinc-900 leading-snug">{product.name}</h3>
+                      <h3 className={`text-base leading-snug ${
+                        product.name.toLowerCase().includes('raksha bandhan') 
+                          ? 'font-serif text-[#8B0000] italic font-bold' 
+                          : 'font-bold text-zinc-900'
+                      }`}>
+                        {product.name}
+                      </h3>
                     </Link>
                     
                     <p className="text-xs text-[#724D26] font-medium mt-1 mb-3 line-clamp-1">{product.subLine}</p>
