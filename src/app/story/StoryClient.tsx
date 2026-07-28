@@ -133,7 +133,7 @@ export default function StoryClient() {
 
   return (
     <div ref={containerRef} className="story-container relative bg-[#FEFEFD] text-zinc-900 font-sans overflow-hidden selection:bg-[#106636] selection:text-white">
-      
+
       {/* 1. Cinematic Hero */}
       <section className="hero-section relative h-[80vh] flex flex-col justify-center items-center text-center overflow-hidden bg-zinc-900">
         <div className="absolute inset-0 z-0">
@@ -175,24 +175,24 @@ export default function StoryClient() {
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-20 fade-up">
             <h2 className="text-3xl font-light text-zinc-900">The Genesis</h2>
-            <div className="w-8 h-[1px] bg-[#724D26] mx-auto mt-6" />
+            <div className="w-8 h-[1px] bg-[#724D26] mx-auto mt-8" />
           </div>
 
           <div className="relative w-full max-w-4xl mx-auto pb-8">
             {/* The vertical lines */}
             <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-zinc-200 -translate-x-1/2" />
             <div className="md:hidden absolute left-4 top-0 bottom-0 w-px bg-zinc-200" />
-            
+
             <div className="space-y-16">
               {[
-                { year: "2022", title: "The Idea Born", desc: "A passionate pursuit begins in a small kitchen. The founders experiment with raw cacao, rejecting every commercial emulsifier." },
-                { year: "2023", title: "Global Research", desc: "Traveling to Swiss ateliers and Middle Eastern souks to understand the delicate balance of tempering and exotic flavor infusions." },
-                { year: "2024", title: "Recipe Development", desc: "Months of meticulous testing leads to the creation of the signature Viral Kunafa Bar, blending toasted kataifi with premium chocolate." },
-                { year: "2025", title: "The First Collection", desc: "Yemnest officially launches its inaugural luxury collection, redefining the modern gifting experience." },
-                { year: "Future", title: "A Vision of Purity", desc: "Continuing to push the boundaries of botanical flavors while maintaining our strict 100% pure cocoa butter standard." },
+                { year: "2024", title: "The idea born", desc: "A passionate journey begins in a home kitchen, rejecting anything artificial." },
+                { year: "2024", title: "Recipe development", desc: "Months of testing shape recipes free from added sugar and preservatives." },
+                { year: "2025", title: "The first collection", desc: "Yemnest launches, sharing honest, handmade chocolate with the world." },
+                { year: "2026", title: "Growing today", desc: "A small home kitchen grows into a trusted name for honest, clean chocolate." },
+                { year: "Future", title: "A vision of purity", desc: "Growing further while staying true to our no added sugar, no preservatives promise." },
               ].map((node, idx) => (
                 <div key={idx} className="timeline-node relative w-full pl-10 md:pl-0">
-                  
+
                   {/* Dot */}
                   <div className="absolute left-[-6px] top-1.5 md:left-1/2 md:top-1/2 md:-translate-y-1/2 md:-translate-x-1/2 w-3 h-3 bg-[#FEFEFD] border-2 border-[#106636] rounded-full z-10" />
 
@@ -233,7 +233,7 @@ export default function StoryClient() {
           <span className="text-[#724D26] text-[10px] uppercase tracking-widest block mb-2">Our Core Pillars</span>
           <h2 className="text-3xl font-light text-zinc-900">Brand Values</h2>
         </div>
-        
+
         <div className="values-grid grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
             { title: "Uncompromising Quality", desc: "We source only the top 1% of raw materials. No shortcuts, no compromises.", icon: "M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" },
@@ -275,7 +275,7 @@ export default function StoryClient() {
                 </p>
               </div>
             </div>
-            
+
             <div className="fade-up grid grid-cols-2 gap-4">
               <div className="relative aspect-[3/4] overflow-hidden">
                 <Image src="https://ik.imagekit.io/dypkhqxip/banner1.1%20(2).png" alt="Crafting" fill className="object-cover opacity-80 hover:opacity-100 hover:scale-105 transition-all duration-700" />
@@ -339,8 +339,8 @@ export default function StoryClient() {
         <div className="max-w-2xl mx-auto fade-up">
           <span className="text-[#F5E6C4] text-[10px] uppercase tracking-widest font-semibold block mb-4">The Next Chapter</span>
           <h2 className="text-3xl sm:text-5xl font-light text-[#FEFEFD] mb-6">&quot;Less, but better.&quot;</h2>
-          <Link 
-            href="/collections" 
+          <Link
+            href="/collections"
             className="inline-block text-[10px] uppercase tracking-widest text-[#106636] bg-white px-10 py-4 hover:bg-[#F5E6C4] transition-colors shadow-xl"
           >
             Shop The Collection

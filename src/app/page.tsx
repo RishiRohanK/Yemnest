@@ -75,33 +75,7 @@ export default function Home() {
         </ScrollReveal>
       </main>
 
-      {/* Luxury Footer */}
-      <footer className="bg-zinc-900 text-zinc-400 py-12 border-t border-zinc-800 rounded-none overflow-hidden">
-        <ScrollReveal animation="fade-up" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center sm:text-left rounded-none">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-6 border-b border-zinc-800 pb-8 mb-8 rounded-none">
-            <Image
-              src="https://ik.imagekit.io/dypkhqxip/yemnestnavbar"
-              alt="Yemnest Logo"
-              width={200}
-              height={40}
-              className="h-10 w-auto brightness-0 invert opacity-75 rounded-none"
-            />
-            <div className="text-center sm:text-right flex flex-col items-center sm:items-end gap-1">
-              <p className="text-xs font-normal">
-                © {new Date().getFullYear()} Yemnest Chocolatiers. All rights reserved.
-              </p>
-              <p className="text-xs sm:text-sm text-zinc-400 font-normal">
-                Maintained and built by Forge Digital Technologies
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap justify-center sm:justify-start gap-x-8 gap-y-4 text-xs font-normal rounded-none">
-            <a href="#privacy" className="hover:text-white transition-colors rounded-none">Privacy Policy</a>
-            <a href="#terms" className="hover:text-white transition-colors rounded-none">Terms of Service</a>
-            <a href="#sustainability" className="hover:text-white transition-colors rounded-none">Sustainability Commitments</a>
-          </div>
-        </ScrollReveal>
-      </footer>
+
     </div>
   );
 }

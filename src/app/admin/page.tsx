@@ -12,6 +12,10 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
 } from "recharts";
 import { Toaster, toast } from "react-hot-toast";
 
@@ -73,7 +77,10 @@ interface Metrics {
   totalRevenue: number;
   salesData: { name: string; revenue: number }[];
   lowStockProducts: { id: string; name: string; stockCount: number; category: string }[];
+  inventoryByCategory: { name: string; value: number }[];
 }
+
+const COLORS = ['#106636', '#724D26', '#d4af37', '#8A6F54', '#A38B73', '#C1A186'];
 
 interface ImageDropZoneProps {
   index: number;
@@ -206,7 +213,8 @@ export default function AdminPage() {
     totalOrders: 0, 
     totalRevenue: 0,
     salesData: [],
-    lowStockProducts: []
+    lowStockProducts: [],
+    inventoryByCategory: []
   });
   const [users, setUsers] = useState<User[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -215,6 +223,26 @@ export default function AdminPage() {
   
   const [dashboardLoading, setDashboardLoading] = useState(false);
 
+  // Notifications State
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const unreadNotifications = notifications.filter(n => !n.isRead).length;
+
+  const notificationRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    }
+    if (showNotifications) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showNotifications]);
   // Order Filters & Bulk State
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -263,11 +291,26 @@ export default function AdminPage() {
     }
   }, [isAdminLoggedIn]);
 
-  // Real-time polling for new orders
+  // Real-time polling for new orders and notifications
   const previousOrderCountRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!isAdminLoggedIn) return;
+
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch("/api/admin/notifications");
+        if (res.ok) {
+          const data = await res.json();
+          setNotifications(data.notifications || []);
+        }
+      } catch (e) {
+        // Silent fail
+      }
+    };
+    
+    // Initial fetch
+    fetchNotifications();
 
     const interval = setInterval(async () => {
       try {
@@ -297,8 +340,14 @@ export default function AdminPage() {
             setMetrics(data.metrics);
             setOrders(data.orders);
             setUsers(data.users);
+            
+            // Also fetch new notifications
+            fetchNotifications();
           }
         }
+        
+        // Always poll notifications along with metrics
+        fetchNotifications();
       } catch (err) {
         // Silent fail for background poller
       }
@@ -307,7 +356,7 @@ export default function AdminPage() {
     return () => clearInterval(interval);
   }, [isAdminLoggedIn]);
 
-  const fetchDashboardData = async () => {
+  async function fetchDashboardData() {
     setDashboardLoading(true);
     try {
       // Fetch Metrics & Users & Orders
@@ -786,13 +835,67 @@ export default function AdminPage() {
             {activeTab === "users" && "Registered Users"}
             {activeTab === "coupons" && "Discount Codes"}
           </h1>
-          <button
-            onClick={fetchDashboardData}
-            disabled={dashboardLoading}
-            className="px-4 py-1.5 border border-zinc-300 bg-[#FEFEFD] hover:bg-zinc-50 text-xs transition-all uppercase tracking-wider disabled:opacity-50"
-          >
-            {dashboardLoading ? "Refreshing..." : "Refresh Data"}
-          </button>
+          <div className="flex items-center gap-4">
+            {/* Notification Bell */}
+            <div className="relative" ref={notificationRef}>
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="p-2 relative rounded-full hover:bg-zinc-100 transition-colors"
+              >
+                <svg className="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                </svg>
+                {unreadNotifications > 0 && (
+                  <span className="absolute top-1 right-1 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500 text-[8px] text-white">
+                    {unreadNotifications}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Dropdown */}
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 bg-white border border-zinc-200 shadow-lg z-50 rounded-none overflow-hidden">
+                  <div className="flex justify-between items-center px-4 py-3 border-b border-zinc-100 bg-zinc-50">
+                    <span className="font-semibold text-xs text-zinc-700 uppercase tracking-widest">Notifications</span>
+                    {unreadNotifications > 0 && (
+                      <button 
+                        onClick={async () => {
+                          await fetch("/api/admin/notifications", {
+                            method: "POST",
+                            body: JSON.stringify({ action: "mark_all_read" })
+                          });
+                          setNotifications(notifications.map(n => ({...n, isRead: true})));
+                        }}
+                        className="text-[10px] text-[#106636] hover:underline"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-center text-xs text-zinc-500">No recent notifications</div>
+                    ) : (
+                      notifications.map(notif => (
+                        <div key={notif.id} className={`p-4 border-b border-zinc-100 text-xs ${!notif.isRead ? 'bg-[#106636]/5' : ''}`}>
+                          <div className="text-zinc-800">{notif.message}</div>
+                          <div className="text-zinc-400 mt-1 text-[10px]">{new Date(notif.createdAt).toLocaleString()}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={fetchDashboardData}
+              disabled={dashboardLoading}
+              className="px-4 py-1.5 border border-zinc-300 bg-[#FEFEFD] hover:bg-zinc-50 text-xs transition-all uppercase tracking-wider disabled:opacity-50"
+            >
+              {dashboardLoading ? "Refreshing..." : "Refresh Data"}
+            </button>
+          </div>
         </div>
 
         {/* Overview Tab */}
@@ -875,6 +978,36 @@ export default function AdminPage() {
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Inventory Pie Chart */}
+            <div className="bg-[#FEFEFD] border border-zinc-200 p-6 shadow-sm mt-6">
+              <h2 className="text-xs uppercase tracking-widest text-zinc-700 font-semibold mb-6">
+                Inventory Distribution by Category
+              </h2>
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={metrics.inventoryByCategory}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={70}
+                      outerRadius={100}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {metrics.inventoryByCategory && metrics.inventoryByCategory.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '0px', border: '1px solid #e4e4e7', fontSize: '12px' }}
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', color: '#555' }} />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
             </div>
           </div>

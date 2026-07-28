@@ -43,6 +43,7 @@ export default function Hero() {
   useEffect(() => {
     startAutoPlay();
     return () => stopAutoPlay();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handlePrev = () => {

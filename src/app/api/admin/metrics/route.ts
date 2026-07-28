@@ -59,6 +59,19 @@ export async function GET(request: Request) {
       orderBy: { stockCount: 'asc' }
     });
 
+    const allProducts = await prisma.product.findMany({
+      select: { category: true, stockCount: true }
+    });
+    
+    const inventoryMap: Record<string, { name: string; value: number }> = {};
+    allProducts.forEach(p => {
+      if (!inventoryMap[p.category]) {
+        inventoryMap[p.category] = { name: p.category, value: 0 };
+      }
+      inventoryMap[p.category].value += p.stockCount;
+    });
+    const inventoryByCategory = Object.values(inventoryMap);
+
     return NextResponse.json(
       {
         metrics: {
@@ -67,6 +80,7 @@ export async function GET(request: Request) {
           totalRevenue,
           salesData,
           lowStockProducts,
+          inventoryByCategory,
         },
         users,
         orders,

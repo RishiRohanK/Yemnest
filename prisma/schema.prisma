@@ -44,7 +44,7 @@ model Order {
   transactionId           String?
   paymentScreenshot       String?
   createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  updatedAt               DateTime @default(now()) @updatedAt
   deliveredAt             DateTime?
 }
 
@@ -85,4 +85,12 @@ model Review {
   createdAt DateTime @default(now())
 
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  message   String
+  type      String   @default("ORDER") // e.g., "ORDER", "ALERT"
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 }

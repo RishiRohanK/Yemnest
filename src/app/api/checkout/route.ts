@@ -79,11 +79,29 @@ export async function POST(req: Request) {
       console.error("Failed to decrement stock during checkout:", err);
     }
 
-    // Send WhatsApp order confirmation asynchronously
+    // Send WhatsApp order confirmation asynchronously to customer
     sendWhatsAppMessage({
       to: phoneNumber, // Assumes the user provided their phone number in the checkout form
       body: `Hello ${userName}, thank you for your order!\n\nYour order (ID: *${newOrder.id}*) has been placed successfully.\nTotal Price: ₹${totalPrice}\n\nWe will notify you once your order is shipped.\n\n- Yemnest Team`
     }).catch(console.error);
+
+    // Send WhatsApp notification to Admin
+    sendWhatsAppMessage({
+      to: "919876543210",
+      body: `🚨 New Order Received!\n\nOrder ID: *${newOrder.id}*\nCustomer: ${userName}\nTotal: ₹${totalPrice}\n\nPlease check the admin dashboard for details.`
+    }).catch(console.error);
+
+    // Create a website Notification for the Admin
+    try {
+      await prisma.notification.create({
+        data: {
+          message: `New Order #${newOrder.id.slice(0, 8)} placed by ${userName} for ₹${totalPrice}`,
+          type: "ORDER",
+        }
+      });
+    } catch (notificationError) {
+      console.error("Failed to create admin notification:", notificationError);
+    }
 
     return NextResponse.json({ success: true, orderId: newOrder.id }, { status: 201 });
   } catch (error: any) {

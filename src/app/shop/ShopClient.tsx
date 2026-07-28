@@ -112,10 +112,9 @@ const ProductCard = memo(({ product, onAddToCart, priority, isWishlisted, onTogg
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (onAddToCart(product)) {
-                  setIsAdded(true);
-                  setTimeout(() => setIsAdded(false), 2000);
-                }
+                onAddToCart(product);
+                setIsAdded(true);
+                setTimeout(() => setIsAdded(false), 2000);
               }}
               disabled={product.stockCount === 0}
               className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${isAdded ? "bg-[#106636] text-white" : "bg-zinc-100 hover:bg-[#106636] text-zinc-900 hover:text-white"}`}

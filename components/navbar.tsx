@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { toast } from "react-hot-toast";
 
 interface UserState {
@@ -244,10 +245,13 @@ export default function Navbar() {
           {/* Logo Section */}
           <div className="flex flex-1 justify-start">
             <Link href="/" className="flex items-center gap-2 group rounded-none">
-              <img
+              <Image
                 src="https://ik.imagekit.io/dypkhqxip/yemnestnavbar"
                 alt="Yemnest Logo"
+                width={200}
+                height={56}
                 className="h-14 w-auto object-contain transition-transform duration-300 group-hover:scale-105 rounded-none"
+                priority
               />
             </Link>
           </div>
