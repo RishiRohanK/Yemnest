@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const adminEmail = process.env.ADMIN_EMAIL;
     const adminPassword = process.env.ADMIN_PASSWORD;
 
-    if (adminEmail && adminPassword && email === adminEmail && password === adminPassword) {
+    if (adminEmail && adminPassword && email.trim() === adminEmail.trim() && password === adminPassword.trim()) {
       const { setSessionCookie } = await import("@/lib/auth");
       await setSessionCookie({ role: "admin", email });
       return NextResponse.json(

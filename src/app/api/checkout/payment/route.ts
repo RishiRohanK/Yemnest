@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       data: {
         transactionId: transactionId || null,
         paymentScreenshot: paymentScreenshot || null,
-        status: "VERIFYING_PAYMENT"
+        status: "CONFIRMED"
       }
     });
 

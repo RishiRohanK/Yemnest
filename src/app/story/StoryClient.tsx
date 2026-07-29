@@ -234,21 +234,23 @@ export default function StoryClient() {
           <h2 className="text-3xl font-light text-zinc-900">Brand Values</h2>
         </div>
 
-        <div className="values-grid grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="values-grid grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
           {[
             { title: "Uncompromising Quality", desc: "We source only the top 1% of raw materials. No shortcuts, no compromises.", icon: "M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" },
             { title: "Master Craftsmanship", desc: "Tempered by hand in small batches to ensure the perfect snap and absolute gloss.", icon: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" },
-            { title: "Absolute Purity", desc: "100% pure cocoa butter. Zero artificial additives. Zero preservatives.", icon: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" },
+            { title: "Absolute Purity", desc: "100% pure cocoa butter. Zero artificial additives. Zero preservatives.", icon: "M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" },
             { title: "Ethical Sustainability", desc: "We partner exclusively with carbon-neutral micro-lots that protect biodiversity.", icon: "M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" },
             { title: "No Preservatives", desc: "Crafted fresh upon order, ensuring peak flavor profiles without chemical shelf-stabilizers.", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
             { title: "Luxury Packaging", desc: "Presented in museum-grade, eco-friendly artisanal boxes designed for the perfect unboxing.", icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" },
           ].map((val, idx) => (
-            <div key={idx} className="value-card bg-white p-8 border border-zinc-100 shadow-sm hover:shadow-md transition-shadow text-center">
-              <svg className="w-8 h-8 text-[#106636] mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d={val.icon} />
-              </svg>
-              <h4 className="text-base font-medium text-zinc-900 mb-2">{val.title}</h4>
-              <p className="text-xs text-zinc-500 leading-relaxed">{val.desc}</p>
+            <div key={idx} className="group value-card bg-[#9DC183] p-8 border border-[#9DC183]/50 shadow-md h-full flex flex-col hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] hover:-translate-y-8 hover:scale-[1.03] transition-all duration-500 text-center rounded-xl cursor-default">
+              <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0">
+                <svg className="w-8 h-8 text-[#9DC183]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={val.icon} />
+                </svg>
+              </div>
+              <h4 className="text-base font-bold text-zinc-900 mb-2 shrink-0">{val.title}</h4>
+              <p className="text-sm text-zinc-800 leading-relaxed font-medium grow flex items-center justify-center">{val.desc}</p>
             </div>
           ))}
         </div>

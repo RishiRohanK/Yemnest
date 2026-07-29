@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { userId, name, email } = body;
+    const { userId, name, email, phoneNumber, alternativeMobileNumber } = body;
 
     if (!userId || !name || !email) {
       return NextResponse.json({ error: "User ID, name, and email are required." }, { status: 400 });
@@ -27,6 +27,8 @@ export async function PUT(request: Request) {
       data: {
         name,
         email,
+        phoneNumber,
+        alternativeMobileNumber
       },
     });
 
@@ -37,6 +39,8 @@ export async function PUT(request: Request) {
           id: updatedUser.id,
           name: updatedUser.name,
           email: updatedUser.email,
+          phoneNumber: updatedUser.phoneNumber,
+          alternativeMobileNumber: updatedUser.alternativeMobileNumber
         }
       },
       { status: 200 }

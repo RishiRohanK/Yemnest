@@ -239,7 +239,10 @@ export default function Navbar() {
   if (pathname && pathname.startsWith("/admin")) return null;
 
   return (
-    <nav className="relative sticky top-0 z-[100] w-full bg-[#FEFEFD] border-b border-zinc-200/60 shadow-sm rounded-none">
+    <nav 
+      onMouseLeave={() => setIsSearchOpen(false)}
+      className="relative sticky top-0 z-[100] w-full bg-[#FEFEFD] border-b border-zinc-200/60 shadow-sm rounded-none"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-20 items-center justify-between">
           {/* Logo Section */}
@@ -257,34 +260,37 @@ export default function Navbar() {
           </div>
 
           {/* Desktop Navigation Links */}
-          <div className="hidden md:flex items-center justify-center space-x-10 flex-2">
+          <div 
+            onMouseEnter={() => setIsSearchOpen(false)}
+            className="hidden md:flex items-center justify-center space-x-10 flex-2"
+          >
             <Link
               href="/shop"
-              className="text-sm font-normal tracking-wide text-zinc-800 hover:text-[#106636] transition-colors duration-200 rounded-none"
+              className={`tracking-wide inline-block transition-all duration-200 rounded-none hover:-translate-y-1 ${pathname === "/shop" ? "text-base text-[#106636] font-black" : "text-sm font-normal text-zinc-800 hover:text-[#106636]"}`}
             >
               Shop
             </Link>
             <Link
               href="/collections"
-              className="text-sm font-normal tracking-wide text-zinc-800 hover:text-[#106636] transition-colors duration-200 rounded-none"
+              className={`tracking-wide inline-block transition-all duration-200 rounded-none hover:-translate-y-1 ${pathname === "/collections" ? "text-base text-[#106636] font-black" : "text-sm font-normal text-zinc-800 hover:text-[#106636]"}`}
             >
               Collections
             </Link>
             <Link
               href="/story"
-              className="text-sm font-normal tracking-wide text-zinc-800 hover:text-[#106636] transition-colors duration-200 rounded-none"
+              className={`tracking-wide inline-block transition-all duration-200 rounded-none hover:-translate-y-1 ${pathname === "/story" ? "text-base text-[#106636] font-black" : "text-sm font-normal text-zinc-800 hover:text-[#106636]"}`}
             >
               Our Story
             </Link>
             <Link
               href="/journey"
-              className="text-sm font-normal tracking-wide text-zinc-800 hover:text-[#106636] transition-colors duration-200 rounded-none"
+              className={`tracking-wide inline-block transition-all duration-200 rounded-none hover:-translate-y-1 ${pathname === "/journey" ? "text-base text-[#106636] font-black" : "text-sm font-normal text-zinc-800 hover:text-[#106636]"}`}
             >
               Cocoa Journey
             </Link>
             <Link
               href="/track"
-              className="text-sm font-normal tracking-wide text-zinc-800 hover:text-[#106636] transition-colors duration-200 rounded-none"
+              className={`tracking-wide inline-block transition-all duration-200 rounded-none hover:-translate-y-1 ${pathname === "/track" ? "text-base text-[#106636] font-black" : "text-sm font-normal text-zinc-800 hover:text-[#106636]"}`}
             >
               Track Order
             </Link>
@@ -296,7 +302,8 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="text-zinc-600 hover:text-[#106636] p-1.5 rounded-none hover:bg-zinc-100/50 transition-all duration-200"
+              onMouseEnter={() => setIsSearchOpen(true)}
+              className="text-zinc-600 p-1.5 hover:text-[#106636] transition-all duration-200 focus:outline-none cursor-pointer hover:-translate-y-1"
               aria-label="Search store"
             >
               <svg
@@ -314,14 +321,67 @@ export default function Navbar() {
               </svg>
             </button>
 
+            {/* Wishlist Icon */}
+            <button
+              onClick={() => setIsWishlistOpen(true)}
+              onMouseEnter={() => setIsSearchOpen(false)}
+              type="button"
+              className="relative text-zinc-600 hover:text-red-500 p-1.5 transition-all duration-200 focus:outline-none cursor-pointer hover:-translate-y-1"
+              aria-label="Wishlist"
+            >
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              {user && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-none bg-red-500 text-[9px] font-normal text-white">
+                  {wishlistItems.length}
+                </span>
+              )}
+            </button>
+
+            {/* Cart Icon */}
+            <button
+              onClick={() => setIsCartOpen(true)}
+              onMouseEnter={() => setIsSearchOpen(false)}
+              type="button"
+              className="relative text-zinc-600 hover:text-[#106636] p-1.5 transition-all duration-200 focus:outline-none cursor-pointer hover:-translate-y-1"
+              aria-label="Shopping Cart"
+            >
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.7 3.032-7.1H5.882m0 0h14.736M7.5 17.25a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm12.75 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"
+                />
+              </svg>
+              {/* Badge (Sharp cornered) */}
+              {user && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-none bg-[#724D26] text-[9px] font-normal text-white">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+
             {/* Profile Dropdown Container */}
             {user ? (
-              <div className="relative" ref={profileMenuRef}>
+              <div className="relative" ref={profileMenuRef} onMouseEnter={() => setIsSearchOpen(false)}>
                 <button
                   type="button"
                   id="desktop-profile-button"
                   onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                  className="flex items-center gap-2 text-zinc-600 hover:text-[#106636] p-1.5 rounded-none hover:bg-zinc-100/50 transition-all duration-200 focus:outline-none"
+                  className="flex items-center gap-2 text-zinc-600 hover:text-[#106636] p-1.5 transition-all duration-200 focus:outline-none cursor-pointer hover:-translate-y-1"
                   aria-label="Profile menu"
                 >
                   <svg
@@ -353,20 +413,6 @@ export default function Navbar() {
                       <p className="text-xs font-normal text-zinc-800 truncate">{user.name}</p>
                     </div>
 
-                    <a
-                      href="/profile"
-                      onClick={() => setIsProfileDropdownOpen(false)}
-                      className="block px-4 py-2 text-xs text-zinc-700 hover:bg-[#FAF9F6] hover:text-[#106636] transition-colors font-normal"
-                    >
-                      Profile
-                    </a>
-                    <a
-                      href="/change-password"
-                      onClick={() => setIsProfileDropdownOpen(false)}
-                      className="block px-4 py-2 text-xs text-zinc-700 hover:bg-[#FAF9F6] hover:text-[#106636] transition-colors font-normal"
-                    >
-                      Change Password
-                    </a>
                     <button
                       type="button"
                       onClick={() => {
@@ -386,26 +432,23 @@ export default function Navbar() {
                     </Link>
 
                     <div className="border-t border-zinc-100/80 mt-2 pt-2">
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          setIsProfileDropdownOpen(false);
-                          localStorage.removeItem("yemnest_user"); // fallback for old data
-                          await fetch("/api/auth/logout", { method: "POST" });
-                          window.dispatchEvent(new Event("yemnest_auth_updated"));
-                          window.location.href = "/";
-                        }}
-                        className="w-full text-left px-4 py-2 text-xs text-zinc-700 hover:bg-[#FAF9F6] hover:text-[#106636] transition-colors font-normal"
+                      <a
+                        href="/settings"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                        className="block px-4 py-2 text-xs text-zinc-700 hover:bg-[#FAF9F6] hover:text-[#106636] transition-colors font-normal"
                       >
-                        Sign Out
-                      </button>
+                        Settings
+                      </a>
                     </div>
+
+
                   </div>
                 )}
               </div>
             ) : (
               <Link
                 href="/signin"
+                onMouseEnter={() => setIsSearchOpen(false)}
                 className="text-zinc-600 hover:text-[#106636] p-1.5 rounded-none hover:bg-zinc-100/50 transition-all duration-200"
                 aria-label="Your Account"
               >
@@ -426,57 +469,6 @@ export default function Navbar() {
                 </svg>
               </Link>
             )}
-
-            {/* Wishlist Icon */}
-            <button
-              onClick={() => setIsWishlistOpen(true)}
-              type="button"
-              className="relative text-zinc-600 hover:text-red-500 p-1.5 rounded-none hover:bg-zinc-100/50 transition-all duration-200 focus:outline-none"
-              aria-label="Wishlist"
-            >
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              {user && (
-                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-none bg-red-500 text-[9px] font-normal text-white">
-                  {wishlistItems.length}
-                </span>
-              )}
-            </button>
-
-            {/* Cart Icon */}
-            <button
-              onClick={() => setIsCartOpen(true)}
-              type="button"
-              className="relative text-zinc-600 hover:text-[#106636] p-1.5 rounded-none hover:bg-zinc-100/50 transition-all duration-200 focus:outline-none"
-              aria-label="Shopping Cart"
-            >
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.7 3.032-7.1H5.882m0 0h14.736M7.5 17.25a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm12.75 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"
-                />
-              </svg>
-              {/* Badge (Sharp cornered) */}
-              {user && (
-                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-none bg-[#724D26] text-[9px] font-normal text-white">
-                  {cartCount}
-                </span>
-              )}
-            </button>
           </div>
 
           {/* Mobile Right Actions & Hamburger Button */}
@@ -568,7 +560,10 @@ export default function Navbar() {
 
       {/* Slide-down Search Bar */}
       {isSearchOpen && (
-        <div className="absolute inset-x-0 top-full bg-[#FEFEFD] border-b border-zinc-200 shadow-md py-4 px-4 sm:px-6 lg:px-8 z-30 transition-all duration-200 rounded-none">
+        <div 
+          onMouseLeave={() => setIsSearchOpen(false)}
+          className="absolute inset-x-0 top-full bg-[#FEFEFD] border-b border-zinc-200 shadow-md py-4 px-4 sm:px-6 lg:px-8 z-30 transition-all duration-200 rounded-none"
+        >
           <div className="mx-auto max-w-3xl flex items-center justify-between gap-4">
             <form onSubmit={handleSearch} className="flex-1 flex items-center gap-3 bg-zinc-100/80 rounded-none px-4 py-2 border border-zinc-200/80 focus-within:border-[#106636] transition-colors">
               <svg
@@ -586,7 +581,7 @@ export default function Navbar() {
               </svg>
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Search chocolates..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-transparent border-none outline-none w-full text-zinc-800 text-sm font-normal placeholder-zinc-400 rounded-none"
@@ -619,31 +614,31 @@ export default function Navbar() {
           <div className="space-y-1 px-4 pb-4 pt-3">
             <Link
               href="/shop"
-              className="block rounded-none px-3 py-2 text-base font-normal tracking-wide text-zinc-800 hover:bg-zinc-100 hover:text-[#106636] transition-colors"
+              className={`block rounded-none px-3 py-2 tracking-wide transition-all ${pathname === "/shop" ? "bg-zinc-100 text-lg text-[#106636] font-black" : "text-base font-normal text-zinc-800 hover:bg-zinc-100 hover:text-[#106636]"}`}
             >
               Shop
             </Link>
             <Link
               href="/collections"
-              className="block rounded-none px-3 py-2 text-base font-normal tracking-wide text-zinc-800 hover:bg-zinc-100 hover:text-[#106636] transition-colors"
+              className={`block rounded-none px-3 py-2 tracking-wide transition-all ${pathname === "/collections" ? "bg-zinc-100 text-lg text-[#106636] font-black" : "text-base font-normal text-zinc-800 hover:bg-zinc-100 hover:text-[#106636]"}`}
             >
               Collections
             </Link>
             <Link
               href="/story"
-              className="block rounded-none px-3 py-2 text-base font-normal tracking-wide text-zinc-800 hover:bg-zinc-100 hover:text-[#106636] transition-colors"
+              className={`block rounded-none px-3 py-2 tracking-wide transition-all ${pathname === "/story" ? "bg-zinc-100 text-lg text-[#106636] font-black" : "text-base font-normal text-zinc-800 hover:bg-zinc-100 hover:text-[#106636]"}`}
             >
               Our Story
             </Link>
             <Link
               href="/journey"
-              className="block rounded-none px-3 py-2 text-base font-normal tracking-wide text-zinc-800 hover:bg-zinc-100 hover:text-[#106636] transition-colors"
+              className={`block rounded-none px-3 py-2 tracking-wide transition-all ${pathname === "/journey" ? "bg-zinc-100 text-lg text-[#106636] font-black" : "text-base font-normal text-zinc-800 hover:bg-zinc-100 hover:text-[#106636]"}`}
             >
               Cocoa Journey
             </Link>
             <Link
               href="/track"
-              className="block rounded-none px-3 py-2 text-base font-normal tracking-wide text-zinc-800 hover:bg-zinc-100 hover:text-[#106636] transition-colors"
+              className={`block rounded-none px-3 py-2 tracking-wide transition-all ${pathname === "/track" ? "bg-zinc-100 text-lg text-[#106636] font-black" : "text-base font-normal text-zinc-800 hover:bg-zinc-100 hover:text-[#106636]"}`}
             >
               Track Order
             </Link>

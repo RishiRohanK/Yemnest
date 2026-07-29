@@ -2,6 +2,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const MapPicker = dynamic(() => import("@/components/MapPicker"), { ssr: false });
 
 interface UserProfile {
   id?: string;
@@ -20,7 +23,12 @@ export default function ProfilePage() {
   
   // Profile (Name & Email) Edit State
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [profileForm, setProfileForm] = useState({ name: "", email: "" });
+  const [profileForm, setProfileForm] = useState({ 
+    name: "", 
+    email: "",
+    phoneNumber: "",
+    alternativeMobileNumber: ""
+  });
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileSaveError, setProfileSaveError] = useState("");
   const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
@@ -30,9 +38,7 @@ export default function ProfilePage() {
   const [addressForm, setAddressForm] = useState({
     houseNo: "",
     addressLine1: "",
-    pincode: "",
-    phoneNumber: "",
-    alternativeMobileNumber: ""
+    pincode: ""
   });
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [addressSaveError, setAddressSaveError] = useState("");
@@ -48,13 +54,13 @@ export default function ProfilePage() {
           setProfileForm({
             name: parsed.name || "",
             email: parsed.email || "",
+            phoneNumber: parsed.phoneNumber || "",
+            alternativeMobileNumber: parsed.alternativeMobileNumber || ""
           });
           setAddressForm({
             houseNo: parsed.houseNo || "",
             addressLine1: parsed.addressLine1 || "",
-            pincode: parsed.pincode || "",
-            phoneNumber: parsed.phoneNumber || "",
-            alternativeMobileNumber: parsed.alternativeMobileNumber || ""
+            pincode: parsed.pincode || ""
           });
         } else {
           router.push("/signin");
@@ -157,7 +163,7 @@ export default function ProfilePage() {
         </h1>
         
         {/* Account Details Section */}
-        <div className="bg-white shadow-sm border border-zinc-200/40 rounded-3xl p-8 mb-8 relative">
+        <div className="bg-white shadow-sm border-2 border-zinc-200 rounded-3xl p-8 mb-8 relative hover:shadow-md hover:border-[#106636] transition-all duration-300">
           <div className="flex justify-between items-center mb-6 border-b border-zinc-100 pb-4">
             <h2 className="text-xl font-normal text-zinc-900">Account Details</h2>
             {!isEditingProfile && (
@@ -193,11 +199,14 @@ export default function ProfilePage() {
                 <label className="block text-xs font-semibold text-[#8A6F54] uppercase tracking-widest mb-2">Email Address</label>
                 <div className="text-zinc-900 text-lg font-medium">{user?.email || "Loading..."}</div>
               </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#8A6F54] uppercase tracking-widest mb-2">Phone Number</label>
+                <div className="text-zinc-900 text-lg font-medium">{user?.phoneNumber || <span className="text-zinc-400 text-sm font-normal">Not provided</span>}</div>
+              </div>
               
               <div>
-                <label className="block text-xs font-semibold text-[#8A6F54] uppercase tracking-widest mb-2">Password</label>
-                <div className="text-zinc-900 text-lg font-medium">••••••••</div>
-                <button onClick={() => router.push("/change-password")} className="text-[#106636] text-xs font-semibold mt-2 hover:underline">Change Password</button>
+                <label className="block text-xs font-semibold text-[#8A6F54] uppercase tracking-widest mb-2">Alternative Phone</label>
+                <div className="text-zinc-900 text-lg font-medium">{user?.alternativeMobileNumber || <span className="text-zinc-400 text-sm font-normal">Not provided</span>}</div>
               </div>
             </div>
           ) : (
@@ -221,6 +230,26 @@ export default function ProfilePage() {
                     required
                     value={profileForm.email}
                     onChange={(e) => setProfileForm({...profileForm, email: e.target.value})}
+                    className="block w-full px-4 py-3 bg-[#FAF9F6] border border-zinc-200/80 text-zinc-900 text-sm font-normal focus:outline-none focus:border-[#106636] focus:bg-white transition-colors duration-200 rounded-none"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs uppercase tracking-wider font-normal text-zinc-600 mb-2">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={profileForm.phoneNumber}
+                    onChange={(e) => setProfileForm({...profileForm, phoneNumber: e.target.value})}
+                    className="block w-full px-4 py-3 bg-[#FAF9F6] border border-zinc-200/80 text-zinc-900 text-sm font-normal focus:outline-none focus:border-[#106636] focus:bg-white transition-colors duration-200 rounded-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs uppercase tracking-wider font-normal text-zinc-600 mb-2">Alternative Phone</label>
+                  <input
+                    type="tel"
+                    value={profileForm.alternativeMobileNumber}
+                    onChange={(e) => setProfileForm({...profileForm, alternativeMobileNumber: e.target.value})}
                     className="block w-full px-4 py-3 bg-[#FAF9F6] border border-zinc-200/80 text-zinc-900 text-sm font-normal focus:outline-none focus:border-[#106636] focus:bg-white transition-colors duration-200 rounded-none"
                   />
                 </div>
@@ -248,7 +277,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Address Details Section */}
-        <div className="bg-white shadow-sm border border-zinc-200/40 rounded-3xl p-8 mb-8 relative">
+        <div className="bg-white shadow-sm border-2 border-zinc-200 rounded-3xl p-8 mb-8 relative hover:shadow-md hover:border-[#106636] transition-all duration-300">
           <div className="flex justify-between items-center mb-6 border-b border-zinc-100 pb-4">
             <h2 className="text-xl font-normal text-zinc-900">Address Details</h2>
             {!isEditingAddress && (
@@ -290,18 +319,54 @@ export default function ProfilePage() {
                 <div className="text-zinc-900 text-lg font-medium">{user?.pincode || <span className="text-zinc-400 text-sm font-normal">Not provided</span>}</div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-[#8A6F54] uppercase tracking-widest mb-2">Phone Number</label>
-                <div className="text-zinc-900 text-lg font-medium">{user?.phoneNumber || <span className="text-zinc-400 text-sm font-normal">Not provided</span>}</div>
-              </div>
-              
-              <div>
-                <label className="block text-xs font-semibold text-[#8A6F54] uppercase tracking-widest mb-2">Alternative Phone</label>
-                <div className="text-zinc-900 text-lg font-medium">{user?.alternativeMobileNumber || <span className="text-zinc-400 text-sm font-normal">Not provided</span>}</div>
-              </div>
             </div>
           ) : (
             <form onSubmit={handleSaveAddress} className="space-y-6">
+              <div className="mb-4">
+                <div className="flex justify-end mb-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if ("geolocation" in navigator) {
+                        navigator.geolocation.getCurrentPosition(async (position) => {
+                          const { latitude, longitude } = position.coords;
+                          try {
+                            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+                            const data = await res.json();
+                            if (data && data.address) {
+                              setAddressForm(prev => ({
+                                ...prev,
+                                houseNo: data.address.house_number || "",
+                                pincode: data.address.postcode || "",
+                                addressLine1: data.display_name || ""
+                              }));
+                            }
+                          } catch (e) {
+                            console.error(e);
+                          }
+                        });
+                      }
+                    }}
+                    className="cursor-pointer flex items-center gap-2 text-xs font-medium text-[#106636] hover:underline bg-[#106636]/10 px-3 py-1.5 rounded-full"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.242-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Use Current Location
+                  </button>
+                </div>
+                <MapPicker 
+                  onLocationSelect={(data) => {
+                    setAddressForm(prev => ({
+                      ...prev,
+                      houseNo: data.address.house_number || "",
+                      pincode: data.address.postcode || "",
+                      addressLine1: data.display_name || ""
+                    }));
+                  }} 
+                />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs uppercase tracking-wider font-normal text-zinc-600 mb-2">House No</label>
@@ -336,26 +401,6 @@ export default function ProfilePage() {
                   />
                 </div>
                 
-                <div>
-                  <label className="block text-xs uppercase tracking-wider font-normal text-zinc-600 mb-2">Phone Number</label>
-                  <input
-                    type="tel"
-                    required
-                    value={addressForm.phoneNumber}
-                    onChange={(e) => setAddressForm({...addressForm, phoneNumber: e.target.value})}
-                    className="block w-full px-4 py-3 bg-[#FAF9F6] border border-zinc-200/80 text-zinc-900 text-sm font-normal focus:outline-none focus:border-[#106636] focus:bg-white transition-colors duration-200 rounded-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs uppercase tracking-wider font-normal text-zinc-600 mb-2">Alternative Phone</label>
-                  <input
-                    type="tel"
-                    value={addressForm.alternativeMobileNumber}
-                    onChange={(e) => setAddressForm({...addressForm, alternativeMobileNumber: e.target.value})}
-                    className="block w-full px-4 py-3 bg-[#FAF9F6] border border-zinc-200/80 text-zinc-900 text-sm font-normal focus:outline-none focus:border-[#106636] focus:bg-white transition-colors duration-200 rounded-none"
-                  />
-                </div>
               </div>
               
               <div className="flex gap-4 pt-2">
@@ -377,20 +422,6 @@ export default function ProfilePage() {
               </div>
             </form>
           )}
-        </div>
-        
-        <div className="flex gap-4">
-          <button 
-            onClick={() => {
-              fetch("/api/auth/logout", { method: "POST" }).then(() => {
-                window.dispatchEvent(new Event("yemnest_auth_updated"));
-                router.push("/");
-              });
-            }}
-            className="w-full flex items-center justify-between p-4 bg-[#FAF9F6] border border-zinc-200/50 hover:bg-zinc-100 transition-colors rounded-none group"
-          >
-            Sign Out
-          </button>
         </div>
       </div>
     </div>

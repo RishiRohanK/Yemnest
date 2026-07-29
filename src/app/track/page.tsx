@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import TopBanner from "../../../components/topbanner";
 
 interface OrderTrackingData {
   id: string;
@@ -53,8 +52,7 @@ export default function TrackOrderPage() {
 
   return (
     <main className="min-h-screen bg-[#FAF9F6] font-sans flex flex-col">
-      <TopBanner />
-      
+
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md bg-white border border-zinc-200 p-8 shadow-sm">
           <h1 className="text-2xl font-light text-zinc-900 text-center mb-2">Track Your Order</h1>

@@ -50,7 +50,7 @@ export async function POST(req: Request) {
         discount: parseFloat(discount),
         totalPrice: parseFloat(totalPrice),
         couponCode: couponCode || null,
-        status: "PENDING"
+        status: "CONFIRMED"
       }
     });
 

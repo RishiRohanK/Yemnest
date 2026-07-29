@@ -38,6 +38,7 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
   const [sortBy, setSortBy] = useState("Newest");
   const [priceRange, setPriceRange] = useState<number>(5000);
   const [showInStock, setShowInStock] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
 
   // Fetch user session
@@ -340,46 +341,79 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
         </div>
       </section>
 
-      {/* Sticky Filter Bar */}
-      <div id="filters" className="sticky top-0 z-40 bg-[#FEFEFD] border-b border-zinc-200/80 shadow-sm px-4 py-3 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      {/* Filters Trigger Button */}
+      <div 
+        onMouseEnter={() => setIsSidebarOpen(true)}
+        className="fixed right-0 top-1/3 z-[90] bg-[#232F3E] text-white py-3 px-2.5 rounded-l shadow-xl cursor-pointer flex flex-col items-center gap-2 hover:bg-[#106636] transition-colors"
+      >
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+        </svg>
+      </div>
+
+      {/* Drawer Overlay Backdrop */}
+      <div 
+        className={`fixed inset-0 bg-black/60 z-[100] transition-opacity duration-300 ${isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        onClick={() => setIsSidebarOpen(false)}
+      />
+
+      {/* Right Sidebar Filters Drawer */}
+      <aside 
+        onMouseLeave={() => setIsSidebarOpen(false)}
+        className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white z-[110] shadow-2xl overflow-y-auto transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "translate-x-full"}`}
+      >
+        {/* Header */}
+        <div className="bg-[#232F3E] text-white p-5 flex items-center gap-3 sticky top-0 z-10">
+          <div className="bg-white/20 p-2 rounded-full">
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+            </svg>
+          </div>
+          <span className="font-bold text-lg tracking-wide">
+            Filter Collections
+          </span>
+          <button 
+            onClick={() => setIsSidebarOpen(false)}
+            className="ml-auto text-white/70 hover:text-white p-1"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex flex-col py-4">
           
-          {/* Categories & Search */}
-          <div className="flex flex-1 items-center gap-4 overflow-x-auto no-scrollbar pb-2 lg:pb-0">
-            <div className="flex items-center gap-2 pr-4 border-r border-zinc-200">
-              <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search..."
-                className="w-32 lg:w-48 bg-transparent text-xs outline-none text-zinc-800 placeholder-zinc-400"
-              />
-            </div>
-            <div className="flex gap-2 whitespace-nowrap">
+          {/* Categories */}
+          <div className="border-b border-zinc-200 pb-4 mb-4">
+            <h3 className="px-6 py-3 text-[16px] font-bold text-zinc-900">Shop by Category</h3>
+            <div className="flex flex-col">
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 text-[10px] uppercase tracking-widest transition-colors border ${
+                  className={`w-full text-left px-6 py-3.5 text-sm transition-colors flex items-center justify-between group ${
                     selectedCategory === cat 
-                    ? "bg-[#106636] text-white border-[#106636]" 
-                    : "bg-transparent text-zinc-600 border-transparent hover:border-zinc-300"
+                    ? "text-[#106636] font-semibold bg-zinc-50" 
+                    : "text-zinc-700 hover:bg-zinc-100"
                   }`}
                 >
-                  {cat}
+                  <span>{cat}</span>
+                  <svg className={`w-4 h-4 text-zinc-400 group-hover:text-zinc-600 transition-colors ${selectedCategory === cat ? "text-[#106636]" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Right Side Filters */}
-          <div className="flex items-center gap-6 text-xs text-zinc-600">
-            {/* Price Slider */}
-            <div className="hidden sm:flex items-center gap-2">
-              <span>Up to ₹{priceRange}</span>
+          {/* Filters */}
+          <div className="pb-4">
+            <h3 className="px-6 py-3 text-[16px] font-bold text-zinc-900">Filters</h3>
+            
+            {/* Price Filter */}
+            <div className="px-6 py-4">
+              <span className="block text-sm font-medium text-zinc-800 mb-3">Price Range</span>
               <input 
                 type="range" 
                 min="0" 
@@ -387,28 +421,31 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
                 step="100"
                 value={priceRange} 
                 onChange={(e) => setPriceRange(Number(e.target.value))}
-                className="w-24 accent-[#106636]"
+                className="w-full accent-[#106636] mb-2"
               />
+              <span className="text-sm text-zinc-600">Up to ₹{priceRange}</span>
             </div>
-            
-            {/* Availability Toggle */}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input 
-                type="checkbox" 
-                checked={showInStock}
-                onChange={(e) => setShowInStock(e.target.checked)}
-                className="accent-[#106636]"
-              />
-              In Stock Only
-            </label>
 
-            {/* Sort Dropdown */}
-            <div className="flex items-center gap-2">
-              <span>Sort:</span>
+            {/* Availability */}
+            <div className="px-6 py-4">
+              <label className="flex items-center gap-3 cursor-pointer text-sm text-zinc-800 font-medium hover:bg-zinc-100 p-3 -mx-3 rounded transition-colors">
+                <input 
+                  type="checkbox" 
+                  checked={showInStock}
+                  onChange={(e) => setShowInStock(e.target.checked)}
+                  className="accent-[#106636] w-5 h-5 rounded-sm"
+                />
+                In Stock Only
+              </label>
+            </div>
+
+            {/* Sort */}
+            <div className="px-6 py-4">
+              <span className="block text-sm font-medium text-zinc-800 mb-3">Sort By</span>
               <select 
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-transparent outline-none cursor-pointer text-zinc-900 font-medium"
+                className="w-full bg-[#FEFEFD] border border-zinc-300 text-sm text-zinc-900 p-3 rounded-sm outline-none focus:border-[#106636] cursor-pointer"
               >
                 <option>Newest</option>
                 <option>Price Low to High</option>
@@ -418,33 +455,36 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
             </div>
           </div>
         </div>
-      </div>
+      </aside>
 
-      {/* Main Catalog Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        
-        {filteredProducts.length === 0 ? (
-          <div className="text-center py-32 bg-white border border-dashed border-zinc-200">
-            <svg className="w-12 h-12 text-zinc-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
-            <h3 className="text-lg text-zinc-900 font-normal mb-2">No masterpieces found</h3>
-            <p className="text-sm text-zinc-500">Try adjusting your filters or searching for something else.</p>
-            <button 
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedCategory("All");
-                setPriceRange(5000);
-                setShowInStock(false);
-              }}
-              className="mt-6 border-b border-[#106636] text-[#106636] text-xs uppercase tracking-widest pb-1"
-            >
-              Clear All Filters
-            </button>
-          </div>
-        ) : (
-          <div className="products-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-12">
-            {filteredProducts.map((product, idx) => (
+      {/* Main Content Area */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" id="filters">
+
+        {/* Main Catalog Area */}
+        <main className="flex-1">
+          
+          {filteredProducts.length === 0 ? (
+            <div className="text-center py-32 bg-[#FEFEFD] border border-dashed border-zinc-200">
+              <svg className="w-12 h-12 text-zinc-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              <h3 className="text-lg text-zinc-900 font-normal mb-2">No masterpieces found</h3>
+              <p className="text-sm text-zinc-500">Try adjusting your filters.</p>
+              <button 
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedCategory("All");
+                  setPriceRange(5000);
+                  setShowInStock(false);
+                }}
+                className="mt-6 border-b border-[#106636] text-[#106636] text-xs uppercase tracking-widest pb-1"
+              >
+                Clear All Filters
+              </button>
+            </div>
+          ) : (
+            <div className="products-grid grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-10 sm:gap-y-12">
+              {filteredProducts.map((product, idx) => (
               <div key={product.id} className="relative">
                 {/* Interspersed Banner every 8 products */}
                 {idx === 4 && (
@@ -576,7 +616,8 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
             ))}
           </div>
         )}
-      </main>
+        </main>
+      </div>
 
       {/* Quick View Modal */}
       {quickViewProduct && (

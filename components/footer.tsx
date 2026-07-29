@@ -11,19 +11,19 @@ export default function Footer() {
   if (pathname && pathname.startsWith("/admin")) return null;
 
   return (
-    <footer className="bg-zinc-950 text-zinc-300 pt-16 pb-8 border-t border-zinc-900 mt-auto">
+    <footer className="bg-zinc-950 text-zinc-300 pt-4 pb-2 border-t border-zinc-900 mt-auto">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
+        <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
           
           {/* Brand Section */}
-          <div className="space-y-6">
+          <div className="space-y-2 max-w-xs">
             <Link href="/" className="inline-block">
               <Image
                 src="https://ik.imagekit.io/dypkhqxip/yemnestnavbar"
                 alt="Yemnest Logo"
-                width={150}
-                height={42}
-                className="h-10 w-auto object-contain brightness-0 invert opacity-90 hover:opacity-100 transition-opacity"
+                width={120}
+                height={34}
+                className="h-8 w-auto object-contain brightness-0 invert opacity-90 hover:opacity-100 transition-opacity"
               />
             </Link>
             <p className="text-sm text-zinc-400 leading-relaxed max-w-xs">
@@ -46,9 +46,9 @@ export default function Footer() {
           </div>
 
           {/* Customer Care */}
-          <div>
-            <h3 className="text-sm font-semibold text-white tracking-wider uppercase mb-6">Customer Care</h3>
-            <ul className="space-y-4">
+          <div className="flex flex-col md:items-end">
+            <h3 className="text-xs font-semibold text-white tracking-wider uppercase mb-2">Customer Care</h3>
+            <ul className="flex flex-wrap gap-x-4 gap-y-1 md:justify-end">
               <li>
                 <Link href="/contact" className="text-sm text-zinc-400 hover:text-white transition-colors">Contact Us</Link>
               </li>
@@ -59,10 +59,10 @@ export default function Footer() {
                 <Link href="/returns" className="text-sm text-zinc-400 hover:text-white transition-colors">Returns & Refunds</Link>
               </li>
               <li>
-                <Link href="/privacy" className="text-sm text-zinc-400 hover:text-white transition-colors">Privacy Policy</Link>
+                <Link href="/privacy" className="text-xs text-zinc-400 hover:text-white transition-colors">Privacy Policy</Link>
               </li>
               <li>
-                <Link href="/terms" className="text-sm text-zinc-400 hover:text-white transition-colors">Terms of Service</Link>
+                <Link href="/terms" className="text-xs text-zinc-400 hover:text-white transition-colors">Terms</Link>
               </li>
             </ul>
           </div>
@@ -70,15 +70,12 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 border-t border-zinc-900 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-zinc-500">
+        <div className="pt-2 border-t border-zinc-900 flex flex-col md:flex-row items-center justify-between gap-2">
+          <p className="text-[10px] text-zinc-500">
             &copy; {new Date().getFullYear()} Yemnest. All rights reserved.
           </p>
-          <div className="flex items-center space-x-3 text-zinc-500">
-            <span className="text-xs font-semibold tracking-wider">SECURE PAYMENTS</span>
-            <svg className="h-5 w-auto" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" />
-            </svg>
+          <div className="flex items-center text-zinc-500">
+            <span className="text-[10px]">Developed by Student Forge</span>
           </div>
         </div>
       </div>

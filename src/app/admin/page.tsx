@@ -44,6 +44,8 @@ interface Order {
   items: string;
   totalPrice: number;
   status: string;
+  transactionId?: string | null;
+  deliveredAt?: string | null;
   createdAt: string;
 }
 
@@ -442,6 +444,16 @@ export default function AdminPage() {
 
   const handleBulkStatusUpdate = async (status: string) => {
     if (selectedOrders.length === 0) return;
+
+    if (status === "PRINT_SLIPS") {
+      toast.success(`Preparing to print slips for ${selectedOrders.length} orders...`);
+      setTimeout(() => {
+        window.print();
+        setSelectedOrders([]);
+      }, 500);
+      return;
+    }
+
     if (!window.confirm(`Update ${selectedOrders.length} orders to ${status}?`)) return;
 
     setIsUpdatingBulk(true);
@@ -1077,6 +1089,7 @@ export default function AdminPage() {
                     disabled={isUpdatingBulk}
                   >
                     <option value="">Bulk Action...</option>
+                    <option value="PRINT_SLIPS">Print Slips</option>
                     <option value="SHIPPED">Mark as Shipped</option>
                     <option value="DELIVERED">Mark as Delivered</option>
                     <option value="CANCELLED">Mark as Cancelled</option>
@@ -1123,8 +1136,17 @@ export default function AdminPage() {
                           </td>
                           <td className="py-4">
                             <div className="font-semibold text-zinc-800">{order.userName}</div>
-                            <div className="text-[10px] text-zinc-500 mt-0.5">{order.userEmail}</div>
-                            <div className="text-[9px] font-mono text-zinc-400 mt-1">ID: {order.id}</div>
+                            <div className="text-[10px] text-zinc-500 mt-0.5 mb-2">{order.userEmail}</div>
+                            <div className="text-[9px] font-mono text-zinc-500 bg-zinc-50 border border-zinc-100 p-1.5 rounded inline-block">
+                              <div className="text-zinc-400 mb-0.5">ORDER ID</div>
+                              <div className="font-semibold text-zinc-700">#{order.id.slice(0,8).toUpperCase()}</div>
+                              {order.transactionId && (
+                                <>
+                                  <div className="text-zinc-400 mt-1.5 mb-0.5">TXN ID</div>
+                                  <div className="font-semibold text-zinc-700">{order.transactionId}</div>
+                                </>
+                              )}
+                            </div>
                           </td>
                           <td className="py-4 text-zinc-600 max-w-xs">
                             <div>{order.houseNo}, {order.addressLine1}</div>
@@ -1137,8 +1159,23 @@ export default function AdminPage() {
                           <td className="py-4 font-semibold text-[#724D26]">
                             ₹{order.totalPrice.toFixed(2)}
                           </td>
-                          <td className="py-4 text-zinc-500">
-                            {new Date(order.createdAt).toLocaleString()}
+                          <td className="py-4">
+                            <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-0.5">Placed On</div>
+                            <div className="text-zinc-700 font-medium text-xs mb-3">
+                              {new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                              <div className="text-[10px] font-normal text-zinc-400 mt-0.5">{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                            </div>
+                            
+                            {order.status === 'DELIVERED' && (
+                              <>
+                                <div className="text-[10px] uppercase tracking-widest text-[#106636] font-semibold mb-0.5">Delivered On</div>
+                                <div className="text-zinc-700 font-medium text-xs">
+                                  {order.deliveredAt 
+                                    ? new Date(order.deliveredAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                                    : "Not recorded"}
+                                </div>
+                              </>
+                            )}
                           </td>
                           <td className="py-4 space-y-2">
                             <select 
