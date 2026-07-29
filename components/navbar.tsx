@@ -220,12 +220,12 @@ export default function Navbar() {
     router.push("/checkout");
   };
 
-  if (pathname && pathname.startsWith("/admin")) return null;
-
   const cartTotal = useMemo(() => cartItems.reduce(
     (sum, item) => sum + Number(item?.product?.price || 0) * Number(item?.quantity || 1),
     0
   ), [cartItems]);
+
+  if (pathname && pathname.startsWith("/admin")) return null;
 
   return (
     <nav className="relative sticky top-0 z-[100] w-full bg-[#FEFEFD] border-b border-zinc-200/60 shadow-sm rounded-none">

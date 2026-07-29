@@ -832,7 +832,7 @@ export default function AdminPage() {
                     <LineChart data={metrics.salesData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#eee" vertical={false} />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#888' }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#888' }} dx={-10} tickFormatter={(value) => `₹${value}`} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#888' }} dx={-10} tickFormatter={(value: any) => `₹${value}`} />
                       <Tooltip 
                         contentStyle={{ borderRadius: '0px', border: '1px solid #e4e4e7', fontSize: '12px' }}
                         itemStyle={{ color: '#106636' }}
@@ -1377,3 +1377,4 @@ export default function AdminPage() {
     </div>
   );
 }
+// Trigger Next.js rebuild

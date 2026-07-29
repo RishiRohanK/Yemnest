@@ -15,6 +15,22 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check if it's admin
+    if (
+      process.env.ADMIN_EMAIL &&
+      process.env.ADMIN_PASSWORD &&
+      email === process.env.ADMIN_EMAIL &&
+      password === process.env.ADMIN_PASSWORD
+    ) {
+      return NextResponse.json(
+        {
+          message: "Admin authenticated successfully",
+          isAdmin: true,
+        },
+        { status: 200 }
+      );
+    }
+
     // Find user in DB
     const user = await prisma.user.findUnique({
       where: { email },

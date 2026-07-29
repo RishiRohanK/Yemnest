@@ -21,16 +21,6 @@ export default function StoryClient() {
       { y: 50, opacity: 0 },
       { y: 0, opacity: 1, duration: 1.2, stagger: 0.15, ease: "power3.out" }
     );
-    gsap.to(".hero-bg", {
-      yPercent: 30,
-      ease: "none",
-      scrollTrigger: {
-        trigger: ".hero-section",
-        start: "top top",
-        end: "bottom top",
-        scrub: true,
-      },
-    });
 
     // 2. Editorial Text Fade-Ups
     const fadeUps = gsap.utils.toArray<HTMLElement>(".fade-up");
@@ -132,30 +122,19 @@ export default function StoryClient() {
   }, { scope: containerRef });
 
   return (
-    <div ref={containerRef} className="story-container relative bg-[#FEFEFD] text-zinc-900 font-sans overflow-hidden selection:bg-[#106636] selection:text-white">
+    <div ref={containerRef} className="story-container relative bg-[#FAF9F6] text-zinc-900 font-sans overflow-hidden selection:bg-[#106636] selection:text-white">
       
-      {/* 1. Cinematic Hero */}
-      <section className="hero-section relative h-[80vh] flex flex-col justify-center items-center text-center overflow-hidden bg-zinc-900">
-        <div className="absolute inset-0 z-0">
-          <Image
-            src="https://ik.imagekit.io/dypkhqxip/banner1.1%20(6).png"
-            alt="The Yemnest Story"
-            fill
-            priority
-            className="hero-bg object-cover opacity-40 select-none"
-          />
-        </div>
-        <div className="relative z-10 px-4 max-w-3xl">
-          <span className="hero-el block text-[#F5E6C4] text-[10px] font-semibold tracking-[0.3em] uppercase mb-4">
-            Our Legacy
-          </span>
-          <h1 className="hero-el text-5xl md:text-7xl font-light text-white tracking-tight mb-8">
-            Our Story
-          </h1>
-          <p className="hero-el text-sm md:text-base text-zinc-300 font-normal leading-relaxed">
-            Redefining luxury through absolute purity, obsessive craftsmanship, and a visionary approach to modern chocolate making.
-          </p>
-        </div>
+      {/* Intro Hero (Matches Cocoa Journey Style) */}
+      <section className="relative pt-40 pb-24 px-4 text-center z-10">
+        <span className="hero-el block text-[#724D26] text-xs uppercase tracking-[0.2em] mb-4">
+          Our Legacy
+        </span>
+        <h1 className="hero-el text-4xl md:text-6xl font-light text-zinc-900 tracking-tight mb-6">
+          The Art of Honest Chocolate
+        </h1>
+        <p className="hero-el max-w-2xl mx-auto text-sm text-zinc-600 font-normal leading-relaxed">
+          Born from a passion for purity. We reject preservatives and hidden sugars to bring you chocolate the way it was meant to be experienced.
+        </p>
       </section>
 
       {/* 2. Why Yemnest Exists (Founders Story & Vision) */}
@@ -185,11 +164,11 @@ export default function StoryClient() {
             
             <div className="space-y-16">
               {[
-                { year: "2022", title: "The Idea Born", desc: "A passionate pursuit begins in a small kitchen. The founders experiment with raw cacao, rejecting every commercial emulsifier." },
-                { year: "2023", title: "Global Research", desc: "Traveling to Swiss ateliers and Middle Eastern souks to understand the delicate balance of tempering and exotic flavor infusions." },
-                { year: "2024", title: "Recipe Development", desc: "Months of meticulous testing leads to the creation of the signature Viral Kunafa Bar, blending toasted kataifi with premium chocolate." },
-                { year: "2025", title: "The First Collection", desc: "Yemnest officially launches its inaugural luxury collection, redefining the modern gifting experience." },
-                { year: "Future", title: "A Vision of Purity", desc: "Continuing to push the boundaries of botanical flavors while maintaining our strict 100% pure cocoa butter standard." },
+                { year: "2024", title: "The idea born", desc: "A passionate journey begins in a home kitchen, rejecting anything artificial." },
+                { year: "2024", title: "Recipe development", desc: "Months of testing shape recipes free from added sugar and preservatives." },
+                { year: "2025", title: "The first collection", desc: "Yemnest launches, sharing honest, handmade chocolate with the world." },
+                { year: "2026", title: "Growing today", desc: "A small home kitchen grows into a trusted name for honest, clean chocolate." },
+                { year: "Future", title: "A vision of purity", desc: "Growing further while staying true to our no added sugar, no preservatives promise." },
               ].map((node, idx) => (
                 <div key={idx} className="timeline-node relative w-full pl-10 md:pl-0">
                   
@@ -200,24 +179,24 @@ export default function StoryClient() {
                   <div className="hidden md:flex w-full items-center justify-between">
                     {/* Left Panel */}
                     <div className={`w-[45%] text-right pr-8 ${idx % 2 !== 0 ? 'invisible' : ''}`}>
-                      <span className="text-[#106636] font-semibold text-lg mb-1 inline-block">{node.year}</span>
-                      <h4 className="text-xl font-light text-zinc-900">{node.title}</h4>
-                      <p className="text-xs text-zinc-500 mt-2 leading-relaxed">{node.desc}</p>
+                      <span className="text-[#106636] font-semibold text-xl mb-1 inline-block">{node.year}</span>
+                      <h4 className="text-2xl font-light text-zinc-900">{node.title}</h4>
+                      <p className="text-base text-zinc-600 mt-2 leading-relaxed">{node.desc}</p>
                     </div>
 
                     {/* Right Panel */}
                     <div className={`w-[45%] text-left pl-8 ${idx % 2 === 0 ? 'invisible' : ''}`}>
-                      <span className="text-[#106636] font-semibold text-lg mb-1 inline-block">{node.year}</span>
-                      <h4 className="text-xl font-light text-zinc-900">{node.title}</h4>
-                      <p className="text-xs text-zinc-500 mt-2 leading-relaxed">{node.desc}</p>
+                      <span className="text-[#106636] font-semibold text-xl mb-1 inline-block">{node.year}</span>
+                      <h4 className="text-2xl font-light text-zinc-900">{node.title}</h4>
+                      <p className="text-base text-zinc-600 mt-2 leading-relaxed">{node.desc}</p>
                     </div>
                   </div>
 
                   {/* Mobile Layout */}
                   <div className="md:hidden w-full text-left">
-                    <span className="text-[#106636] font-semibold text-lg block mb-1">{node.year}</span>
-                    <h4 className="text-xl font-light text-zinc-900">{node.title}</h4>
-                    <p className="text-xs text-zinc-500 mt-2 leading-relaxed">{node.desc}</p>
+                    <span className="text-[#106636] font-semibold text-xl block mb-1">{node.year}</span>
+                    <h4 className="text-2xl font-light text-zinc-900">{node.title}</h4>
+                    <p className="text-base text-zinc-600 mt-2 leading-relaxed">{node.desc}</p>
                   </div>
 
                 </div>
