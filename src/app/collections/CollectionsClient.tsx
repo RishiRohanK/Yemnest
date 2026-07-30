@@ -184,16 +184,11 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
       { y: 0, opacity: 1, duration: 1.2, stagger: 0.15, ease: "power3.out" }
     );
 
-    gsap.to(".hero-bg", {
-      yPercent: 30,
-      ease: "none",
-      scrollTrigger: {
-        trigger: ".hero-section",
-        start: "top top",
-        end: "bottom top",
-        scrub: true,
-      },
-    });
+    // Background Breathing Animation
+    gsap.fromTo(".yemnest-bg-text", 
+      { scale: 1, opacity: 0.04 }, 
+      { scale: 1.1, opacity: 0.12, duration: 8, ease: "sine.inOut", repeat: -1, yoyo: true }
+    );
 
     // 2. Product Stagger Reveal
     const productCards = gsap.utils.toArray<HTMLElement>(".product-card-reveal");
@@ -313,16 +308,15 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
     <div ref={containerRef} className="min-h-screen bg-[#FAF9F6] text-zinc-900 font-sans">
       
       {/* Premium Collections Hero */}
-      <section className="hero-section relative h-[55vh] md:h-[65vh] flex flex-col justify-center items-center text-center overflow-hidden bg-black">
-        <div className="absolute inset-0 z-0">
-          <Image
-            src="https://ik.imagekit.io/dypkhqxip/banner1.1%20(6).png"
-            alt="Yemnest Luxury Collections"
-            fill
-            priority
-            className="hero-bg object-cover opacity-50 select-none"
-          />
+      <section className="hero-section relative h-[55vh] md:h-[65vh] flex flex-col justify-center items-center text-center overflow-hidden bg-gradient-to-br from-[#106636] from-40% to-[#724D26] to-60%">
+        
+        {/* Animated Background Text */}
+        <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none z-0">
+          <h2 className="yemnest-bg-text text-[18vw] md:text-[10vw] font-serif tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-r from-[#F5E6C4] via-[#d4af37] to-[#F5E6C4] whitespace-nowrap select-none blur-sm">
+            YEMNEST
+          </h2>
         </div>
+
         <div className="relative z-10 px-4 max-w-3xl mx-auto">
           <span className="hero-el block text-[#F5E6C4] text-[10px] font-semibold tracking-[0.3em] uppercase mb-4">
             Exclusive Selection

@@ -24,7 +24,7 @@ const STAGES = [
     title: "Harvesting",
     subtitle: "Hand-Picked Precision",
     desc: "Only the ripest pods are selected. Our farmers carefully cut each pod by hand using specialized machetes to ensure the tree's delicate flower cushions are never damaged.",
-    image: "/images/journey/stage-2.png",
+    image: "/images/journey/stage-2-new.png",
   },
   {
     id: 3,
@@ -45,7 +45,7 @@ const STAGES = [
     title: "Roasting",
     subtitle: "The Maillard Reaction",
     desc: "At our atelier, beans are roasted in small batches. We meticulously profile the roasting curve for each harvest, coaxing out deep chocolate notes without burning the delicate aromatics.",
-    image: "/images/journey/stage-5.png",
+    image: "/images/journey/stage-5-new.png",
   },
   {
     id: 6,
