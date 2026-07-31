@@ -36,16 +36,6 @@ export default function SignInPage() {
         if (!res.ok) {
           throw new Error(data.error || "Login failed.");
         }
-        
-        if (data.isAdmin) {
-          localStorage.setItem("yemnest_admin_logged_in", "true");
-          setSuccess(true);
-          setTimeout(() => {
-            router.push("/admin");
-          }, 1500);
-          return;
-        }
-
         setSuccess(true);
         
         if (data.isAdmin) {

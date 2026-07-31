@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -224,6 +224,46 @@ export default function AdminPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   
   const [dashboardLoading, setDashboardLoading] = useState(false);
+
+  const [revenueFilter, setRevenueFilter] = useState<"all" | "today" | "week" | "month" | "lastMonth" | "10days" | "15days" | "custom">("all");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
+
+  const filteredRevenue = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    
+    const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
+    const fifteenDaysAgo = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
+
+    return orders.reduce((sum, order) => {
+      const orderDate = new Date(order.createdAt);
+      
+      if (revenueFilter === "today" && orderDate < today) return sum;
+      if (revenueFilter === "week" && orderDate < startOfWeek) return sum;
+      if (revenueFilter === "month" && orderDate < startOfMonth) return sum;
+      
+      if (revenueFilter === "lastMonth" && (orderDate < startOfLastMonth || orderDate > endOfLastMonth)) return sum;
+      if (revenueFilter === "10days" && orderDate < tenDaysAgo) return sum;
+      if (revenueFilter === "15days" && orderDate < fifteenDaysAgo) return sum;
+      if (revenueFilter === "custom") {
+        if (customStartDate && orderDate < new Date(customStartDate)) return sum;
+        if (customEndDate) {
+          const endDate = new Date(customEndDate);
+          endDate.setHours(23, 59, 59, 999);
+          if (orderDate > endDate) return sum;
+        }
+      }
+      
+      return sum + order.totalPrice;
+    }, 0);
+  }, [orders, revenueFilter, customStartDate, customEndDate]);
 
   // Notifications State
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -826,15 +866,6 @@ export default function AdminPage() {
             </button>
           </nav>
         </div>
-
-        <div className="px-4 mt-6">
-          <button
-            onClick={handleAdminLogout}
-            className="w-full py-2 bg-zinc-800 hover:bg-zinc-750 text-zinc-300 hover:text-white text-xs uppercase tracking-wider transition-colors"
-          >
-            Sign Out
-          </button>
-        </div>
       </aside>
 
       {/* Main Panel Content */}
@@ -907,6 +938,12 @@ export default function AdminPage() {
             >
               {dashboardLoading ? "Refreshing..." : "Refresh Data"}
             </button>
+            <button
+              onClick={handleAdminLogout}
+              className="px-4 py-1.5 border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 text-xs transition-all uppercase tracking-wider"
+            >
+              Sign Out
+            </button>
           </div>
         </div>
 
@@ -915,12 +952,44 @@ export default function AdminPage() {
           <div className="space-y-8 animate-fade-in">
             {/* Metric Blocks */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div className="bg-[#FEFEFD] p-6 border border-zinc-200 shadow-sm">
-                <span className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">
-                  Total Revenue
-                </span>
+              <div className="bg-[#FEFEFD] p-6 border border-zinc-200 shadow-sm relative">
+                <div className="flex justify-between items-start mb-1">
+                  <span className="text-[10px] text-zinc-400 uppercase tracking-widest block">
+                    Total Revenue
+                  </span>
+                  <select 
+                    value={revenueFilter}
+                    onChange={(e) => setRevenueFilter(e.target.value as any)}
+                    className="text-[10px] uppercase tracking-widest text-zinc-500 bg-transparent border-none outline-none cursor-pointer hover:text-zinc-800 transition-colors"
+                  >
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="lastMonth">Last Month</option>
+                    <option value="10days">Last 10 Days</option>
+                    <option value="15days">Last 15 Days</option>
+                    <option value="custom">Custom Range</option>
+                  </select>
+                </div>
+                {revenueFilter === "custom" && (
+                  <div className="flex gap-2 mb-3 mt-1">
+                    <input 
+                      type="date" 
+                      value={customStartDate} 
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                      className="text-[10px] border border-zinc-200 p-1 w-full text-zinc-600 bg-transparent outline-none" 
+                    />
+                    <input 
+                      type="date" 
+                      value={customEndDate} 
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                      className="text-[10px] border border-zinc-200 p-1 w-full text-zinc-600 bg-transparent outline-none" 
+                    />
+                  </div>
+                )}
                 <span className="text-2xl font-semibold text-[#724D26]">
-                  ₹{metrics.totalRevenue.toFixed(2)}
+                  ₹{filteredRevenue.toFixed(2)}
                 </span>
               </div>
 
@@ -954,7 +1023,7 @@ export default function AdminPage() {
                     <LineChart data={metrics.salesData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#eee" vertical={false} />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#888' }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#888' }} dx={-10} tickFormatter={(value: any) => `₹${value}`} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#888' }} dx={-10} tickFormatter={(value) => `₹${value}`} />
                       <Tooltip 
                         contentStyle={{ borderRadius: '0px', border: '1px solid #e4e4e7', fontSize: '12px' }}
                         itemStyle={{ color: '#106636' }}
@@ -1563,4 +1632,3 @@ export default function AdminPage() {
     </div>
   );
 }
-// Trigger Next.js rebuild
