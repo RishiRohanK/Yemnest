@@ -30,6 +30,8 @@ interface Product {
 interface CartItem {
   product: Product;
   quantity: number;
+  theme?: string;
+  customFestival?: string;
 }
 
 export default function Navbar() {
@@ -182,9 +184,9 @@ export default function Navbar() {
     }
   };
 
-  const updateCartQuantity = useCallback((productId: string, increment: boolean) => {
-    const updated = cartItems.map((item) => {
-      if (item?.product?.id === productId) {
+  const updateCartQuantity = useCallback((index: number, increment: boolean) => {
+    const updated = cartItems.map((item, i) => {
+      if (i === index) {
         const maxStock = item.product.stockCount || 100; // fallback if stockCount is missing
         if (increment && item.quantity >= maxStock) {
           toast.error(`Only ${maxStock} items left in stock!`);
@@ -830,11 +832,16 @@ export default function Navbar() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {cartItems.map((item) => (
-                    <div key={item.product.id} className="flex justify-between items-center border-b border-zinc-100 pb-3">
+                  {cartItems.map((item, index) => (
+                    <div key={`${item.product.id}-${index}`} className="flex justify-between items-center border-b border-zinc-100 pb-3">
                       <div>
                         <p className="text-xs font-medium text-zinc-800">{item.product.name}</p>
-                        <p className="text-[10px] text-zinc-400 mb-1">
+                        {item.theme && (
+                          <p className="text-[10px] text-[#724D26] uppercase tracking-widest mt-0.5">
+                            Theme: {item.theme === 'Customized Festival' ? item.customFestival : item.theme}
+                          </p>
+                        )}
+                        <p className="text-[10px] text-zinc-400 mb-1 mt-0.5">
                           Price: ₹{item.product.price.toFixed(2)}
                         </p>
                         
@@ -842,7 +849,7 @@ export default function Navbar() {
                         <div className="flex items-center gap-1.5 mt-1">
                           <button
                             type="button"
-                            onClick={() => updateCartQuantity(item.product.id, false)}
+                            onClick={() => updateCartQuantity(index, false)}
                             className="h-5 w-5 flex items-center justify-center border border-zinc-200 hover:border-zinc-400 bg-[#FAF9F6] text-zinc-700 text-xs font-normal transition-colors"
                           >
                             -
@@ -852,7 +859,7 @@ export default function Navbar() {
                           </span>
                           <button
                             type="button"
-                            onClick={() => updateCartQuantity(item.product.id, true)}
+                            onClick={() => updateCartQuantity(index, true)}
                             className="h-5 w-5 flex items-center justify-center border border-zinc-200 hover:border-zinc-400 bg-[#FAF9F6] text-zinc-700 text-xs font-normal transition-colors"
                           >
                             +
@@ -867,7 +874,7 @@ export default function Navbar() {
                         <button
                           type="button"
                           onClick={() => {
-                            const updated = cartItems.filter((i) => i?.product?.id !== item?.product?.id);
+                            const updated = cartItems.filter((_, i) => i !== index);
                             
                             // Strip huge fields to prevent QuotaExceededError
                             const lightweightUpdated = updated.map(uItem => ({

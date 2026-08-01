@@ -29,8 +29,43 @@ interface Product {
   dietary?: string;
 }
 
-export default function CollectionsClient({ initialProducts }: { initialProducts: Product[] }) {
+interface Category {
+  id: string;
+  name: string;
+}
+
+const RakshaSlideshow = ({ images }: { images: string[] }) => {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % images.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [images]);
+  return (
+    <div className="relative w-full h-full overflow-hidden">
+      {images.map((img, i) => (
+        <Image
+          key={img}
+          src={img}
+          alt="Product"
+          fill
+          className={`object-cover transition-opacity duration-700 ${i === index ? "opacity-100" : "opacity-0"}`}
+        />
+      ))}
+    </div>
+  );
+};
+
+export default function CollectionsClient({ 
+  initialProducts,
+  initialCategories 
+}: { 
+  initialProducts: Product[];
+  initialCategories: Category[];
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // State for Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -483,20 +518,31 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
               </button>
             </div>
           ) : (
-            <div className="products-grid grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-10 sm:gap-y-12">
-              {filteredProducts.map((product, idx) => (
-              <div key={product.id} className="relative">
-                {/* Interspersed Banner every 8 products */}
-                {idx === 4 && (
-                  <div className="promo-banner col-span-full mb-12 mt-4 relative h-[30vh] sm:h-[40vh] flex items-center justify-center overflow-hidden group cursor-pointer bg-zinc-900">
-                    <Image src="https://ik.imagekit.io/dypkhqxip/collectiosn2?updatedAt=1784063410170" fill className="object-cover opacity-60 group-hover:scale-105 transition-transform duration-1000" alt="Promo" />
-                    <div className="relative z-10 text-center">
-                      <span className="text-[#F5E6C4] text-[10px] uppercase tracking-[0.3em] block mb-2">Exclusive Release</span>
-                      <h3 className="text-3xl text-white font-light tracking-wide mb-4">The Festive Gift Box</h3>
-                      <Link href="/shop" className="bg-white text-black px-6 py-2 text-[10px] uppercase tracking-widest hover:bg-[#F5E6C4] transition-colors">Discover Now</Link>
-                    </div>
-                  </div>
-                )}
+            <>
+            <div className="relative group/carousel">
+              {/* Navigation Arrows */}
+              <button 
+                onClick={() => {
+                  const container = document.getElementById('products-carousel');
+                  if (container) container.scrollBy({ left: -300, behavior: 'smooth' });
+                }}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-12 z-10 bg-white/90 shadow-md p-3 rounded-full text-zinc-800 opacity-0 group-hover/carousel:opacity-100 transition-opacity disabled:opacity-0"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              <button 
+                onClick={() => {
+                  const container = document.getElementById('products-carousel');
+                  if (container) container.scrollBy({ left: 300, behavior: 'smooth' });
+                }}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-12 z-10 bg-white/90 shadow-md p-3 rounded-full text-zinc-800 opacity-0 group-hover/carousel:opacity-100 transition-opacity disabled:opacity-0"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+              </button>
+
+              <div id="products-carousel" className="products-grid flex overflow-x-auto snap-x snap-mandatory gap-4 sm:gap-6 pb-12 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {filteredProducts.map((product, idx) => (
+                <div key={product.id} className="relative flex-none w-[70vw] sm:w-[220px] md:w-[260px] snap-center shrink-0">
 
                 <div className="product-card-reveal group relative flex flex-col h-full bg-transparent bg-[url('/chocolate-border-new2.jpg')] bg-[length:100%_100%] bg-no-repeat transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 rounded-xl">
                   
@@ -528,20 +574,32 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
                   {/* Image Container */}
                   <div className="relative aspect-[4/5] w-full overflow-hidden bg-zinc-50 mb-4 rounded-3xl shadow-sm border border-zinc-200/40">
                     <Link href={`/shop/${product.id}`} className="relative block w-full h-full">
-                      {/* Primary Image */}
-                      <Image
-                        src={product.image1}
-                        alt={product.name}
-                        fill
-                        className="object-cover transition-opacity duration-500 z-10 group-hover:opacity-0"
-                      />
-                      {/* Hover Image (Fallback to image1 if image2 is missing) */}
-                      <Image
-                        src={product.image2 || product.image1}
-                        alt={product.name + " hover"}
-                        fill
-                        className="object-cover transition-transform duration-700 scale-105 group-hover:scale-100 z-0"
-                      />
+                      {product.name.toLowerCase().includes('raksha bandhan') ? (
+                        <RakshaSlideshow images={['/images/themes/raksha-bandhan/closed.jpg', '/images/themes/raksha-bandhan/open.jpg']} />
+                      ) : product.name.toLowerCase().includes('birthday') ? (
+                        <RakshaSlideshow images={['/images/themes/birthday/closed.jpg', '/images/themes/birthday/open.jpg']} />
+                      ) : product.name.toLowerCase().includes('anniversary') ? (
+                        <RakshaSlideshow images={['/images/themes/anniversary/closed.jpg', '/images/themes/anniversary/open.jpg']} />
+                      ) : product.name.toLowerCase().includes('diwali') ? (
+                        <RakshaSlideshow images={['/images/themes/diwali/closed.jpg', '/images/themes/diwali/open.jpg']} />
+                      ) : (
+                        <>
+                          {/* Primary Image */}
+                          <Image
+                            src={product.image1}
+                            alt={product.name}
+                            fill
+                            className="object-cover transition-opacity duration-500 z-10 group-hover:opacity-0"
+                          />
+                          {/* Hover Image (Fallback to image1 if image2 is missing) */}
+                          <Image
+                            src={product.image2 || product.image1}
+                            alt={product.name + " hover"}
+                            fill
+                            className="object-cover transition-transform duration-700 scale-105 group-hover:scale-100 z-0"
+                          />
+                        </>
+                      )}
                     </Link>
 
                     {/* Quick View Button */}
@@ -596,7 +654,7 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
                           }
                         }}
                         disabled={product.stockCount === 0}
-                        className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${addedCardIds.includes(product.id) ? "bg-[#106636] text-white" : "bg-zinc-100 hover:bg-[#106636] text-zinc-900 hover:text-white"}`}
+                        className={`w-10 h-10 shrink-0 flex items-center justify-center rounded-full transition-colors ${addedCardIds.includes(product.id) ? "bg-[#106636] text-white" : "bg-zinc-100 hover:bg-[#106636] text-zinc-900 hover:text-white"}`}
                       >
                         {addedCardIds.includes(product.id) ? (
                           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -614,7 +672,19 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
                 </div>
               </div>
             ))}
-          </div>
+              </div>
+            </div>
+            
+            {/* Promo Banner moved below the carousel */}
+            <div className="promo-banner mt-16 mb-8 relative h-[30vh] sm:h-[40vh] flex items-center justify-center overflow-hidden group cursor-pointer bg-zinc-900 rounded-xl max-w-7xl mx-auto">
+              <Image src="/images/themes/diwali/closed.jpg" fill className="object-cover opacity-60 group-hover:scale-105 transition-transform duration-1000" alt="Promo" />
+              <div className="relative z-10 text-center">
+                <span className="text-[#F5E6C4] text-[10px] uppercase tracking-[0.3em] block mb-2">Exclusive Release</span>
+                <h3 className="text-3xl text-white font-light tracking-wide mb-4">The Festive Gift Box</h3>
+                <Link href="/shop" className="bg-white text-black px-6 py-2 text-[10px] uppercase tracking-widest hover:bg-[#F5E6C4] transition-colors">Discover Now</Link>
+              </div>
+            </div>
+            </>
         )}
         </main>
       </div>
@@ -637,15 +707,27 @@ export default function CollectionsClient({ initialProducts }: { initialProducts
             {/* Image Gallery */}
             <div className="w-full md:w-1/2 p-6 md:p-8 bg-zinc-50 flex flex-col">
               <div className="relative aspect-square w-full mb-4 bg-white border border-zinc-200">
-                <Image src={quickViewImage} alt={quickViewProduct.name} fill className="object-cover" />
+                {quickViewProduct.name.toLowerCase().includes('raksha bandhan') ? (
+                  <RakshaSlideshow images={['/images/themes/raksha-bandhan/closed.jpg', '/images/themes/raksha-bandhan/open.jpg']} />
+                ) : quickViewProduct.name.toLowerCase().includes('birthday') ? (
+                  <RakshaSlideshow images={['/images/themes/birthday/closed.jpg', '/images/themes/birthday/open.jpg']} />
+                ) : quickViewProduct.name.toLowerCase().includes('anniversary') ? (
+                  <RakshaSlideshow images={['/images/themes/anniversary/closed.jpg', '/images/themes/anniversary/open.jpg']} />
+                ) : quickViewProduct.name.toLowerCase().includes('diwali') ? (
+                  <RakshaSlideshow images={['/images/themes/diwali/closed.jpg', '/images/themes/diwali/open.jpg']} />
+                ) : (
+                  <Image src={quickViewImage} alt={quickViewProduct.name} fill className="object-cover" />
+                )}
               </div>
-              <div className="flex gap-2">
-                {[quickViewProduct.image1, quickViewProduct.image2, quickViewProduct.image3, quickViewProduct.image4].filter(Boolean).map((img, i) => (
-                  <button key={i} onClick={() => setQuickViewImage(img!)} className={`relative w-16 h-16 border ${quickViewImage === img ? 'border-[#106636]' : 'border-zinc-200'}`}>
-                    <Image src={img!} alt="" fill className="object-cover" />
-                  </button>
-                ))}
-              </div>
+              {!(quickViewProduct.name.toLowerCase().includes('raksha bandhan') || quickViewProduct.name.toLowerCase().includes('birthday') || quickViewProduct.name.toLowerCase().includes('anniversary') || quickViewProduct.name.toLowerCase().includes('diwali')) && (
+                <div className="flex gap-2">
+                  {[quickViewProduct.image1, quickViewProduct.image2, quickViewProduct.image3, quickViewProduct.image4].filter(Boolean).map((img, i) => (
+                    <button key={i} onClick={() => setQuickViewImage(img!)} className={`relative w-16 h-16 border ${quickViewImage === img ? 'border-[#106636]' : 'border-zinc-200'}`}>
+                      <Image src={img!} alt="" fill className="object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Details */}

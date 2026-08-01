@@ -128,7 +128,9 @@ export default function CheckoutClient() {
             id: i.product.id,
             name: i.product.name,
             price: i.product.price,
-            quantity: i.quantity
+            quantity: i.quantity,
+            theme: i.theme,
+            customFestival: i.customFestival
           })),
           subTotal,
           tax,
@@ -230,7 +232,12 @@ export default function CheckoutClient() {
                   <div key={idx} className="flex justify-between items-center text-sm">
                     <div>
                       <p className="font-medium">{item.product.name}</p>
-                      <p className="text-xs text-zinc-500">Qty: {item.quantity}</p>
+                      {item.theme && (
+                        <p className="text-[10px] text-[#724D26] uppercase tracking-widest mt-0.5">
+                          Theme: {item.theme === 'Customized Festival' ? item.customFestival : item.theme}
+                        </p>
+                      )}
+                      <p className="text-xs text-zinc-500 mt-0.5">Qty: {item.quantity}</p>
                     </div>
                     <p className="font-medium text-[#106636]">₹{(item.product.price * item.quantity).toFixed(2)}</p>
                   </div>
