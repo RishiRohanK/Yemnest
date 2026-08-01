@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     // Calculate metrics
     const totalUsers = users.length;
     const totalOrders = orders.length;
-    const totalRevenue = orders.reduce((sum, order) => sum + order.totalPrice, 0);
+    const totalRevenue = orders.reduce((sum: number, order) => sum + order.totalPrice, 0);
 
     // Calculate daily sales for chart
     const last7Days = [...Array(7)].map((_, i) => {
