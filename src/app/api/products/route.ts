@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 // GET all products
 export async function GET(request: Request) {
   try {
     const products = await prisma.product.findMany({
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: [
+        { displayOrder: "asc" },
+        { createdAt: "desc" },
+      ],
     });
     return NextResponse.json(products, { status: 200 });
   } catch (error: any) {
@@ -35,6 +38,8 @@ export async function POST(request: Request) {
       image3,
       image4,
       category,
+      price12Bar,
+      cutoffPrice12Bar,
     } = body;
 
     // Validate fields
@@ -66,8 +71,13 @@ export async function POST(request: Request) {
         image3,
         image4,
         category,
+        price12Bar: price12Bar ? parseFloat(price12Bar.toString()) : null,
+        cutoffPrice12Bar: cutoffPrice12Bar ? parseFloat(cutoffPrice12Bar.toString()) : null,
       },
     });
+
+    const { invalidateProductCache } = await import("@/lib/product-cache");
+    invalidateProductCache();
 
     return NextResponse.json(product, { status: 201 });
   } catch (error: any) {

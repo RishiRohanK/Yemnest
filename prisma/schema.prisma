@@ -49,21 +49,24 @@ model Order {
 }
 
 model Product {
-  id          String   @id @default(uuid())
-  name        String
-  subLine     String
-  price       Float
-  cutoffPrice Float
-  description String
-  stockCount  Int
-  image1      String
-  image2      String
-  image3      String
-  image4      String
-  category    String   @default("Atelier Specialties")
-  dietary     String   @default("[\"Vegetarian\", \"Contains Nuts\"]")
-  createdAt   DateTime @default(now())
-  reviews     Review[]
+  id           String   @id @default(uuid())
+  name         String
+  subLine      String
+  price            Float
+  cutoffPrice      Float
+  price12Bar       Float?
+  cutoffPrice12Bar Float?
+  description      String
+  stockCount       Int
+  image1       String
+  image2       String
+  image3       String
+  image4       String
+  category     String   @default("Atelier Specialties")
+  dietary      String   @default("[\"Vegetarian\", \"Contains Nuts\"]")
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  reviews      Review[]
 }
 
 model Coupon {

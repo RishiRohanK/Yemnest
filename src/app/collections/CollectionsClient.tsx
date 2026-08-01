@@ -1,829 +1,147 @@
 "use client";
 
-import { useRef, useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
-import { toast } from "react-hot-toast";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
+import Image from "next/image";
 
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
+export default function CollectionsClient() {
+  const lookbookSections = [
+    {
+      id: "diwali",
+      title: "The Diwali Collection",
+      description: "Celebrate the festival of lights with our hand-crafted festive boxes.",
+      image: "/images/themes/diwali/image1.png",
+      href: "/shop?category=Gift+Boxes"
+    },
+    {
+      id: "anniversary",
+      title: "The Anniversary Collection",
+      description: "Mark your special milestones with decadent sweetness.",
+      image: "/images/themes/anniversary/open.jpg",
+      href: "/shop?category=Gift+Boxes"
+    },
+    {
+      id: "birthday",
+      title: "The Birthday Collection",
+      description: "Make every birthday sweeter with curated assortments.",
+      image: "/images/themes/birthday/open.jpg",
+      href: "/shop?category=Gift+Boxes"
+    },
+    {
+      id: "raksha",
+      title: "Raksha Bandhan Exclusive",
+      description: "Celebrate the eternal sibling bond with our signature boxes.",
+      image: "/images/themes/raksha-bandhan/open.jpg",
+      href: "/shop?category=Gift+Boxes"
+    }
+  ];
 
-interface Product {
-  id: string;
-  name: string;
-  subLine: string;
-  category: string;
-  price: number;
-  cutoffPrice?: number;
-  description: string;
-  stockCount: number;
-  image1: string;
-  image2?: string;
-  image3?: string;
-  image4?: string;
-  dietary?: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-}
-
-const RakshaSlideshow = ({ images }: { images: string[] }) => {
-  const [index, setIndex] = useState(0);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % images.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [images]);
   return (
-    <div className="relative w-full h-full overflow-hidden">
-      {images.map((img, i) => (
+    <div className="min-h-screen bg-[#FAF9F6] text-zinc-900 font-sans pb-24">
+      {/* Hero Section */}
+      <section className="relative h-[40vh] md:h-[50vh] w-full flex items-center justify-center overflow-hidden">
         <Image
-          key={img}
-          src={img}
-          alt="Product"
+          src="/collectionshero.png"
+          alt="Collections Hero"
           fill
-          className={`object-cover transition-opacity duration-700 ${i === index ? "opacity-100" : "opacity-0"}`}
+          className="object-cover opacity-90 brightness-75"
+          priority
         />
-      ))}
-    </div>
-  );
-};
-
-export default function CollectionsClient({ 
-  initialProducts,
-  initialCategories 
-}: { 
-  initialProducts: Product[];
-  initialCategories: Category[];
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
-
-  // State for Filters
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [sortBy, setSortBy] = useState("Newest");
-  const [priceRange, setPriceRange] = useState<number>(5000);
-  const [showInStock, setShowInStock] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
-
-  // Fetch user session
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then(res => res.json())
-      .then(data => {
-        if (data.authenticated) {
-          setUser(data);
-        } else {
-          setUser(null);
-        }
-      })
-      .catch(() => setUser(null));
-  }, []);
-
-  // State for Quick View
-  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
-  const [quickViewImage, setQuickViewImage] = useState<string>("");
-  const [quickViewQuantity, setQuickViewQuantity] = useState(1);
-  const [cartToast, setCartToast] = useState(false);
-  const [cartToastName, setCartToastName] = useState("");
-  const [isAdding, setIsAdding] = useState(false);
-  const [addedCardIds, setAddedCardIds] = useState<string[]>([]);
-
-  // State for Wishlist
-  const [wishlist, setWishlist] = useState<Product[]>([]);
-
-  // Load Wishlist from LocalStorage
-  useEffect(() => {
-    const syncWishlist = () => {
-      if (typeof window !== "undefined") {
-        const stored = localStorage.getItem("yemnest_wishlist");
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              // Guard against old string-only wishlist
-              if (typeof parsed[0] === "string") {
-                setWishlist([]);
-                localStorage.removeItem("yemnest_wishlist");
-              } else {
-                setWishlist(parsed);
-              }
-            } else {
-              setWishlist([]);
-            }
-          } catch (e) {
-            console.error("Failed to parse wishlist from local storage", e);
-          }
-        } else {
-          setWishlist([]);
-        }
-      }
-    };
-
-    syncWishlist();
-
-    window.addEventListener("yemnest_wishlist_updated", syncWishlist);
-    return () => {
-      window.removeEventListener("yemnest_wishlist_updated", syncWishlist);
-    };
-  }, []);
-
-  const toggleWishlist = (product: Product, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!user) {
-      toast.error("Please sign in to add to wishlist", { icon: "🔒" });
-      return;
-    }
-
-    let updated;
-    
-    if (wishlist.some(item => item.id === product.id)) {
-      updated = wishlist.filter(item => item.id !== product.id);
-    } else {
-      updated = [...wishlist, product];
-    }
-    
-    setWishlist(updated);
-    
-    if (typeof window !== "undefined") {
-      const lightweightUpdated = updated.map(item => ({
-        ...item,
-        image1: "", image2: "", image3: "", image4: "", description: ""
-      }));
-      localStorage.setItem("yemnest_wishlist", JSON.stringify(lightweightUpdated));
-      window.dispatchEvent(new Event("yemnest_wishlist_updated"));
-    }
-  };
-
-  const CATEGORIES = ["All", "Atelier Specialties", "Kunafa Bars", "Gift Boxes", "Limited Edition"];
-  
-  // Filtering Logic
-  const filteredProducts = useMemo(() => {
-    let result = [...initialProducts];
-
-    if (selectedCategory !== "All") {
-      result = result.filter((p) => p.category === selectedCategory);
-    }
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q) ||
-          p.subLine.toLowerCase().includes(q)
-      );
-    }
-    if (showInStock) {
-      result = result.filter((p) => p.stockCount > 0);
-    }
-    result = result.filter((p) => p.price <= priceRange);
-
-    // Sorting
-    switch (sortBy) {
-      case "Price Low to High":
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case "Price High to Low":
-        result.sort((a, b) => b.price - a.price);
-        break;
-      // Mock 'Best Selling' by sorting by stock count ascending (assuming lower stock = sold more)
-      case "Best Selling":
-        result.sort((a, b) => a.stockCount - b.stockCount);
-        break;
-      case "Newest":
-      default:
-        // Already sorted by newest from DB
-        break;
-    }
-
-    return result;
-  }, [initialProducts, selectedCategory, searchQuery, showInStock, priceRange, sortBy]);
-
-  useGSAP(() => {
-    // 1. Hero Animations
-    gsap.fromTo(
-      ".hero-el",
-      { y: 40, opacity: 0 },
-      { y: 0, opacity: 1, duration: 1.2, stagger: 0.15, ease: "power3.out" }
-    );
-
-    // Background Breathing Animation
-    gsap.fromTo(".yemnest-bg-text", 
-      { scale: 1, opacity: 0.04 }, 
-      { scale: 1.1, opacity: 0.12, duration: 8, ease: "sine.inOut", repeat: -1, yoyo: true }
-    );
-
-    // 2. Product Stagger Reveal
-    const productCards = gsap.utils.toArray<HTMLElement>(".product-card-reveal");
-    if (productCards.length > 0) {
-      gsap.fromTo(
-        productCards,
-        { y: 50, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 0.8,
-          stagger: 0.05,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: ".products-grid",
-            start: "top 85%",
-            toggleActions: "play none none reverse",
-          },
-        }
-      );
-    }
-
-    // 3. Promotional Banner Reveal
-    const banners = gsap.utils.toArray<HTMLElement>(".promo-banner");
-    banners.forEach((banner) => {
-      gsap.fromTo(
-        banner,
-        { scale: 0.95, opacity: 0 },
-        {
-          scale: 1,
-          opacity: 1,
-          duration: 1,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: banner,
-            start: "top 80%",
-            toggleActions: "play none none reverse",
-          },
-        }
-      );
-    });
-
-  }, { scope: containerRef, dependencies: [filteredProducts] });
-
-  // Handle Cart
-  const handleAddToCart = (product: Product, quantity: number = 1) => {
-    if (!user) {
-      toast.error("Please sign in to add to cart", { icon: "🔒" });
-      return false;
-    }
-
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("yemnest_cart_items");
-      let items: { product: Product; quantity: number }[] = [];
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) {
-            items = parsed.filter((item: any) => item && item.product && typeof item.product.id === "string");
-          }
-        } catch (e) {
-          items = [];
-        }
-      }
-
-      const existingIndex = items.findIndex((item) => item.product.id === product.id);
-      if (existingIndex > -1) {
-        if (items[existingIndex].quantity + quantity > product.stockCount) {
-          toast.error(`You cannot add more. Only ${product.stockCount} in stock!`);
-          return;
-        }
-        items[existingIndex].quantity += quantity;
-      } else {
-        if (quantity > product.stockCount) {
-          toast.error(`You cannot add more. Only ${product.stockCount} in stock!`);
-          return;
-        }
-        items.push({ product, quantity });
-      }
-
-      // Strip fields to save localStorage space
-      const lightweightItems = items.map(item => ({
-        ...item,
-        product: {
-          ...item.product,
-          image1: "", image2: "", image3: "", image4: "", description: ""
-        }
-      }));
-
-      try {
-        localStorage.setItem("yemnest_cart_items", JSON.stringify(lightweightItems));
-      } catch (err) {
-        console.error("Failed to save cart to localStorage:", err);
-      }
-
-      const totalCount = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
-      localStorage.setItem("yemnest_cart_count", totalCount.toString());
-
-      window.dispatchEvent(new Event("yemnest_cart_updated"));
-      window.dispatchEvent(new Event("yemnest_open_cart"));
-      
-      setCartToastName(product.name);
-      setCartToast(true);
-      setTimeout(() => setCartToast(false), 3000);
-      return true;
-    }
-    return false;
-  };
-
-  const openQuickView = (product: Product) => {
-    setQuickViewProduct(product);
-    setQuickViewImage(product.image1);
-    setQuickViewQuantity(1);
-  };
-
-  return (
-    <div ref={containerRef} className="min-h-screen bg-[#FAF9F6] text-zinc-900 font-sans">
-      
-      {/* Premium Collections Hero */}
-      <section className="hero-section relative h-[55vh] md:h-[65vh] flex flex-col justify-center items-center text-center overflow-hidden bg-gradient-to-br from-[#106636] from-40% to-[#724D26] to-60%">
-        
-        {/* Animated Background Text */}
-        <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none z-0">
-          <h2 className="yemnest-bg-text text-[18vw] md:text-[10vw] font-serif tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-r from-[#F5E6C4] via-[#d4af37] to-[#F5E6C4] whitespace-nowrap select-none blur-sm">
-            YEMNEST
-          </h2>
-        </div>
-
-        <div className="relative z-10 px-4 max-w-3xl mx-auto">
-          <span className="hero-el block text-[#F5E6C4] text-[10px] font-semibold tracking-[0.3em] uppercase mb-4">
-            Exclusive Selection
-          </span>
-          <h1 className="hero-el text-4xl md:text-6xl lg:text-7xl font-light text-white tracking-tight mb-6 leading-tight">
-            The Art of Chocolate
+        <div className="absolute inset-0 bg-black/20" />
+        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
+          <h1 className="text-4xl md:text-7xl font-light text-white mb-6 uppercase tracking-widest drop-shadow-md">
+            The Collections
           </h1>
-          <p className="hero-el text-sm md:text-base text-zinc-300 font-normal leading-relaxed mb-8">
-            Explore our curated gallery of premium artisanal creations. Each piece is a harmonious blend of sustainable luxury, pure cocoa butter, and visionary craftsmanship.
+          <p className="text-lg md:text-2xl text-[#F5E6C4] font-serif italic drop-shadow-md">
+            Curated assortments for every celebration.
           </p>
-          <div className="hero-el">
-            <a href="#filters" className="inline-block bg-[#F5E6C4] text-[#106636] text-[10px] uppercase tracking-widest py-3 px-8 hover:bg-white transition-colors shadow-lg">
-              Explore Collection
-            </a>
+        </div>
+      </section>
+
+      {/* Signature Kunafa Section */}
+      <section className="py-24 px-6 max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row items-center gap-12">
+          <div className="w-full md:w-1/2 space-y-6">
+            <h2 className="text-sm uppercase tracking-[0.2em] text-[#8A6F54] font-semibold">Atelier Signature</h2>
+            <h3 className="text-4xl md:text-5xl font-light text-zinc-900 leading-tight">
+              The Kunafa Bars
+            </h3>
+            <p className="text-zinc-600 text-lg leading-relaxed font-light">
+              Experience the perfect harmony of crispy shredded phyllo pastry and rich, decadent chocolate. Our signature Kunafa bars are crafted with premium ingredients sourced globally, bringing an authentic Middle Eastern texture to modern chocolate artistry.
+            </p>
+            <Link
+              href="/shop?category=Kunafa+Bars"
+              className="inline-block mt-8 bg-zinc-900 text-white px-8 py-4 text-xs uppercase tracking-[0.15em] hover:bg-[#106636] transition-colors"
+            >
+              Explore Kunafa Bars
+            </Link>
+          </div>
+          <div className="w-full md:w-1/2 relative h-[500px] rounded-2xl overflow-hidden group">
+            <Image
+              src="https://ik.imagekit.io/dypkhqxip/collectiosn5"
+              alt="Pistachio Kunafa"
+              fill
+              unoptimized
+              className="object-cover group-hover:scale-105 transition-transform duration-1000"
+            />
           </div>
         </div>
       </section>
 
-      {/* Filters Trigger Button */}
-      <div 
-        onMouseEnter={() => setIsSidebarOpen(true)}
-        className="fixed right-0 top-1/3 z-[90] bg-[#232F3E] text-white py-3 px-2.5 rounded-l shadow-xl cursor-pointer flex flex-col items-center gap-2 hover:bg-[#106636] transition-colors"
-      >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-        </svg>
-      </div>
-
-      {/* Drawer Overlay Backdrop */}
-      <div 
-        className={`fixed inset-0 bg-black/60 z-[100] transition-opacity duration-300 ${isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-        onClick={() => setIsSidebarOpen(false)}
-      />
-
-      {/* Right Sidebar Filters Drawer */}
-      <aside 
-        onMouseLeave={() => setIsSidebarOpen(false)}
-        className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white z-[110] shadow-2xl overflow-y-auto transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "translate-x-full"}`}
-      >
-        {/* Header */}
-        <div className="bg-[#232F3E] text-white p-5 flex items-center gap-3 sticky top-0 z-10">
-          <div className="bg-white/20 p-2 rounded-full">
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-            </svg>
-          </div>
-          <span className="font-bold text-lg tracking-wide">
-            Filter Collections
-          </span>
-          <button 
-            onClick={() => setIsSidebarOpen(false)}
-            className="ml-auto text-white/70 hover:text-white p-1"
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+      {/* Lookbook Grid */}
+      <section className="py-12 px-6 max-w-7xl mx-auto border-t border-zinc-200/60 pt-24">
+        <div className="text-center mb-16">
+          <h2 className="text-sm uppercase tracking-[0.2em] text-[#8A6F54] font-semibold mb-3">Gifting &amp; Occasions</h2>
+          <h3 className="text-3xl md:text-5xl font-light text-zinc-900">
+            Curated Gift Boxes
+          </h3>
         </div>
 
-        <div className="flex flex-col py-4">
-          
-          {/* Categories */}
-          <div className="border-b border-zinc-200 pb-4 mb-4">
-            <h3 className="px-6 py-3 text-[16px] font-bold text-zinc-900">Shop by Category</h3>
-            <div className="flex flex-col">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`w-full text-left px-6 py-3.5 text-sm transition-colors flex items-center justify-between group ${
-                    selectedCategory === cat 
-                    ? "text-[#106636] font-semibold bg-zinc-50" 
-                    : "text-zinc-700 hover:bg-zinc-100"
-                  }`}
-                >
-                  <span>{cat}</span>
-                  <svg className={`w-4 h-4 text-zinc-400 group-hover:text-zinc-600 transition-colors ${selectedCategory === cat ? "text-[#106636]" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="pb-4">
-            <h3 className="px-6 py-3 text-[16px] font-bold text-zinc-900">Filters</h3>
-            
-            {/* Price Filter */}
-            <div className="px-6 py-4">
-              <span className="block text-sm font-medium text-zinc-800 mb-3">Price Range</span>
-              <input 
-                type="range" 
-                min="0" 
-                max="5000" 
-                step="100"
-                value={priceRange} 
-                onChange={(e) => setPriceRange(Number(e.target.value))}
-                className="w-full accent-[#106636] mb-2"
-              />
-              <span className="text-sm text-zinc-600">Up to ₹{priceRange}</span>
-            </div>
-
-            {/* Availability */}
-            <div className="px-6 py-4">
-              <label className="flex items-center gap-3 cursor-pointer text-sm text-zinc-800 font-medium hover:bg-zinc-100 p-3 -mx-3 rounded transition-colors">
-                <input 
-                  type="checkbox" 
-                  checked={showInStock}
-                  onChange={(e) => setShowInStock(e.target.checked)}
-                  className="accent-[#106636] w-5 h-5 rounded-sm"
-                />
-                In Stock Only
-              </label>
-            </div>
-
-            {/* Sort */}
-            <div className="px-6 py-4">
-              <span className="block text-sm font-medium text-zinc-800 mb-3">Sort By</span>
-              <select 
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full bg-[#FEFEFD] border border-zinc-300 text-sm text-zinc-900 p-3 rounded-sm outline-none focus:border-[#106636] cursor-pointer"
-              >
-                <option>Newest</option>
-                <option>Price Low to High</option>
-                <option>Price High to Low</option>
-                <option>Best Selling</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" id="filters">
-
-        {/* Main Catalog Area */}
-        <main className="flex-1">
-          
-          {filteredProducts.length === 0 ? (
-            <div className="text-center py-32 bg-[#FEFEFD] border border-dashed border-zinc-200">
-              <svg className="w-12 h-12 text-zinc-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-              <h3 className="text-lg text-zinc-900 font-normal mb-2">No masterpieces found</h3>
-              <p className="text-sm text-zinc-500">Try adjusting your filters.</p>
-              <button 
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedCategory("All");
-                  setPriceRange(5000);
-                  setShowInStock(false);
-                }}
-                className="mt-6 border-b border-[#106636] text-[#106636] text-xs uppercase tracking-widest pb-1"
-              >
-                Clear All Filters
-              </button>
-            </div>
-          ) : (
-            <>
-            <div className="relative group/carousel">
-              {/* Navigation Arrows */}
-              <button 
-                onClick={() => {
-                  const container = document.getElementById('products-carousel');
-                  if (container) container.scrollBy({ left: -300, behavior: 'smooth' });
-                }}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-12 z-10 bg-white/90 shadow-md p-3 rounded-full text-zinc-800 opacity-0 group-hover/carousel:opacity-100 transition-opacity disabled:opacity-0"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
-              </button>
-              <button 
-                onClick={() => {
-                  const container = document.getElementById('products-carousel');
-                  if (container) container.scrollBy({ left: 300, behavior: 'smooth' });
-                }}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-12 z-10 bg-white/90 shadow-md p-3 rounded-full text-zinc-800 opacity-0 group-hover/carousel:opacity-100 transition-opacity disabled:opacity-0"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
-              </button>
-
-              <div id="products-carousel" className="products-grid flex overflow-x-auto snap-x snap-mandatory gap-4 sm:gap-6 pb-12 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {filteredProducts.map((product, idx) => (
-                <div key={product.id} className="relative flex-none w-[70vw] sm:w-[220px] md:w-[260px] snap-center shrink-0">
-
-                <div className="product-card-reveal group relative flex flex-col h-full bg-transparent bg-[url('/chocolate-border-new2.jpg')] bg-[length:100%_100%] bg-no-repeat transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 rounded-xl">
-                  
-                  {/* Inner wrapper to keep content inside the organic cream area of the image */}
-                  <div className="relative flex flex-col flex-1 pt-[12%] px-[8%] pb-[20%] bg-transparent">
-                    
-                    {/* Badges */}
-                    <div className="absolute top-2 left-2 z-20 flex flex-col gap-2">
-                      {product.stockCount <= 5 && product.stockCount > 0 && (
-                        <span className="bg-[#724D26] text-white text-[9px] uppercase tracking-wider px-2 py-1 shadow-sm rounded-sm">Low Stock</span>
-                      )}
-                      {(product.cutoffPrice ?? 0) > product.price && (
-                        <span className="bg-[#106636] text-white text-[9px] uppercase tracking-wider px-2 py-1 shadow-sm rounded-sm">Sale</span>
-                      )}
-                    </div>
-
-
-                    
-                    {/* Wishlist Icon */}
-                    <button 
-                      onClick={(e) => toggleWishlist(product, e)}
-                      className={`absolute top-2 right-2 z-20 transition-colors bg-white/90 p-1.5 rounded-full shadow-md opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:translate-y-2 lg:group-hover:translate-y-0 duration-300 ${wishlist.some(item => item.id === product.id) ? 'text-red-500' : 'text-zinc-400 hover:text-red-500'}`}
-                    >
-                      <svg className="w-4 h-4" fill={wishlist.some(item => item.id === product.id) ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
-                    </button>
-
-                  {/* Image Container */}
-                  <div className="relative aspect-[4/5] w-full overflow-hidden bg-zinc-50 mb-4 rounded-3xl shadow-sm border border-zinc-200/40">
-                    <Link href={`/shop/${product.id}`} className="relative block w-full h-full">
-                      {product.name.toLowerCase().includes('raksha bandhan') ? (
-                        <RakshaSlideshow images={['/images/themes/raksha-bandhan/closed.jpg', '/images/themes/raksha-bandhan/open.jpg']} />
-                      ) : product.name.toLowerCase().includes('birthday') ? (
-                        <RakshaSlideshow images={['/images/themes/birthday/closed.jpg', '/images/themes/birthday/open.jpg']} />
-                      ) : product.name.toLowerCase().includes('anniversary') ? (
-                        <RakshaSlideshow images={['/images/themes/anniversary/closed.jpg', '/images/themes/anniversary/open.jpg']} />
-                      ) : product.name.toLowerCase().includes('diwali') ? (
-                        <RakshaSlideshow images={['/images/themes/diwali/closed.jpg', '/images/themes/diwali/open.jpg']} />
-                      ) : (
-                        <>
-                          {/* Primary Image */}
-                          <Image
-                            src={product.image1}
-                            alt={product.name}
-                            fill
-                            className="object-cover transition-opacity duration-500 z-10 group-hover:opacity-0"
-                          />
-                          {/* Hover Image (Fallback to image1 if image2 is missing) */}
-                          <Image
-                            src={product.image2 || product.image1}
-                            alt={product.name + " hover"}
-                            fill
-                            className="object-cover transition-transform duration-700 scale-105 group-hover:scale-100 z-0"
-                          />
-                        </>
-                      )}
-                    </Link>
-
-                    {/* Quick View Button */}
-                    <div className="absolute bottom-0 left-0 right-0 p-3 z-20 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                      <button 
-                        onClick={() => openQuickView(product)}
-                        className="w-full bg-white/90 backdrop-blur-sm text-zinc-900 py-2.5 text-[10px] uppercase tracking-widest font-semibold hover:bg-[#106636] hover:text-white transition-colors border border-zinc-200"
-                      >
-                        Quick View
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Details */}
-                  <div className="px-4 pb-5 flex flex-col flex-1">
-                    <div className="flex justify-between items-start mb-1">
-                      <span className="text-[10px] font-semibold text-[#8A6F54] uppercase tracking-widest">{product.category}</span>
-                      <div className="flex text-yellow-500 text-[10px]">
-                        ★ 4.8
-                      </div>
-                    </div>
-                    
-                    <Link href={`/shop/${product.id}`} className="group-hover:text-[#106636] transition-colors">
-                      <h3 className={`text-base leading-snug ${
-                        product.name.toLowerCase().includes('raksha bandhan') 
-                          ? 'font-serif text-[#8B0000] italic font-bold' 
-                          : 'font-bold text-zinc-900'
-                      }`}>
-                        {product.name}
-                      </h3>
-                    </Link>
-                    
-                    <p className="text-xs text-[#724D26] font-medium mt-1 mb-3 line-clamp-1">{product.subLine}</p>
-                    
-                    <div className="mt-auto flex items-end justify-between pt-3 border-t border-zinc-100/50">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl font-black text-[#106636]">₹{product.price.toFixed(2)}</span>
-                        {(product.cutoffPrice ?? 0) > product.price && (
-                          <span className="text-sm text-[#8A6F54] line-through font-medium">₹{product.cutoffPrice!.toFixed(2)}</span>
-                        )}
-                      </div>
-                      
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (handleAddToCart(product)) {
-                            setAddedCardIds(prev => [...prev, product.id]);
-                            setTimeout(() => {
-                              setAddedCardIds(prev => prev.filter(id => id !== product.id));
-                            }, 2000);
-                          }
-                        }}
-                        disabled={product.stockCount === 0}
-                        className={`w-10 h-10 shrink-0 flex items-center justify-center rounded-full transition-colors ${addedCardIds.includes(product.id) ? "bg-[#106636] text-white" : "bg-zinc-100 hover:bg-[#106636] text-zinc-900 hover:text-white"}`}
-                      >
-                        {addedCardIds.includes(product.id) ? (
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                          </svg>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-              </div>
-            </div>
-            
-            {/* Promo Banner moved below the carousel */}
-            <div className="promo-banner mt-16 mb-8 relative h-[30vh] sm:h-[40vh] flex items-center justify-center overflow-hidden group cursor-pointer bg-zinc-900 rounded-xl max-w-7xl mx-auto">
-              <Image src="/images/themes/diwali/closed.jpg" fill className="object-cover opacity-60 group-hover:scale-105 transition-transform duration-1000" alt="Promo" />
-              <div className="relative z-10 text-center">
-                <span className="text-[#F5E6C4] text-[10px] uppercase tracking-[0.3em] block mb-2">Exclusive Release</span>
-                <h3 className="text-3xl text-white font-light tracking-wide mb-4">The Festive Gift Box</h3>
-                <Link href="/shop" className="bg-white text-black px-6 py-2 text-[10px] uppercase tracking-widest hover:bg-[#F5E6C4] transition-colors">Discover Now</Link>
-              </div>
-            </div>
-            </>
-        )}
-        </main>
-      </div>
-
-      {/* Quick View Modal */}
-      {quickViewProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 sm:px-6">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setQuickViewProduct(null)} />
-          <div className="relative bg-[#FEFEFD] w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col md:flex-row shadow-2xl animate-fade-in">
-            
-            <button 
-              onClick={() => setQuickViewProduct(null)}
-              className="absolute top-4 right-4 z-20 text-zinc-400 hover:text-black bg-white/50 p-2 rounded-full"
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+          {lookbookSections.map((section, idx) => (
+            <Link
+              href={section.href}
+              key={section.id}
+              className="group block overflow-hidden rounded-2xl relative bg-zinc-100"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+              <div className="relative h-[400px] md:h-[600px] w-full overflow-hidden">
+                <Image
+                  src={section.image}
+                  alt={section.title}
+                  fill
+                  className="object-cover group-hover:scale-110 transition-transform duration-[1.5s] ease-out"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-500" />
 
-            {/* Image Gallery */}
-            <div className="w-full md:w-1/2 p-6 md:p-8 bg-zinc-50 flex flex-col">
-              <div className="relative aspect-square w-full mb-4 bg-white border border-zinc-200">
-                {quickViewProduct.name.toLowerCase().includes('raksha bandhan') ? (
-                  <RakshaSlideshow images={['/images/themes/raksha-bandhan/closed.jpg', '/images/themes/raksha-bandhan/open.jpg']} />
-                ) : quickViewProduct.name.toLowerCase().includes('birthday') ? (
-                  <RakshaSlideshow images={['/images/themes/birthday/closed.jpg', '/images/themes/birthday/open.jpg']} />
-                ) : quickViewProduct.name.toLowerCase().includes('anniversary') ? (
-                  <RakshaSlideshow images={['/images/themes/anniversary/closed.jpg', '/images/themes/anniversary/open.jpg']} />
-                ) : quickViewProduct.name.toLowerCase().includes('diwali') ? (
-                  <RakshaSlideshow images={['/images/themes/diwali/closed.jpg', '/images/themes/diwali/open.jpg']} />
-                ) : (
-                  <Image src={quickViewImage} alt={quickViewProduct.name} fill className="object-cover" />
-                )}
-              </div>
-              {!(quickViewProduct.name.toLowerCase().includes('raksha bandhan') || quickViewProduct.name.toLowerCase().includes('birthday') || quickViewProduct.name.toLowerCase().includes('anniversary') || quickViewProduct.name.toLowerCase().includes('diwali')) && (
-                <div className="flex gap-2">
-                  {[quickViewProduct.image1, quickViewProduct.image2, quickViewProduct.image3, quickViewProduct.image4].filter(Boolean).map((img, i) => (
-                    <button key={i} onClick={() => setQuickViewImage(img!)} className={`relative w-16 h-16 border ${quickViewImage === img ? 'border-[#106636]' : 'border-zinc-200'}`}>
-                      <Image src={img!} alt="" fill className="object-cover" />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Details */}
-            <div className="w-full md:w-1/2 p-6 md:p-10 flex flex-col">
-              <span className="text-[#106636] text-[10px] uppercase tracking-widest mb-2 block">{quickViewProduct.category}</span>
-              <h2 className="text-2xl font-light text-zinc-900 mb-1">{quickViewProduct.name}</h2>
-              <div className="flex items-center gap-3 mb-4 border-b border-zinc-100 pb-4">
-                <span className="text-xl font-medium text-[#724D26]">₹{quickViewProduct.price.toFixed(2)}</span>
-                {(quickViewProduct.cutoffPrice ?? 0) > quickViewProduct.price && (
-                  <span className="text-sm text-zinc-400 line-through">₹{quickViewProduct.cutoffPrice!.toFixed(2)}</span>
-                )}
-              </div>
-              
-              <p className="text-sm text-zinc-600 mb-6 leading-relaxed line-clamp-3">
-                {quickViewProduct.description}
-              </p>
-
-              {/* Mock Premium Data */}
-              <div className="space-y-3 mb-8">
-                <div className="flex items-center gap-3 text-xs text-zinc-500">
-                  <svg className="w-4 h-4 text-[#724D26]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                  <span><strong>Ingredients:</strong> 100% Pure Cocoa Butter, Organic Cacao Beans, Unrefined Cane Sugar, Madagascar Vanilla.</span>
-                </div>
-                <div className="flex items-center gap-3 text-xs text-zinc-500">
-                  <svg className="w-4 h-4 text-[#724D26]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                  </svg>
-                  <span><strong>Net Weight:</strong> 250g (8.8 oz)</span>
-                </div>
-              </div>
-
-              {/* Add to Cart Controls */}
-              <div className="mt-auto">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="flex items-center border border-zinc-300">
-                    <button onClick={() => setQuickViewQuantity(Math.max(1, quickViewQuantity - 1))} className="px-3 py-2 text-zinc-500 hover:text-black">-</button>
-                    <span className="w-8 text-center text-sm font-medium">{quickViewQuantity}</span>
-                    <button 
-                      onClick={() => {
-                        if (quickViewQuantity >= quickViewProduct.stockCount) {
-                          toast.error(`Only ${quickViewProduct.stockCount} items left in stock!`);
-                        } else {
-                          setQuickViewQuantity(quickViewQuantity + 1);
-                        }
-                      }} 
-                      className="px-3 py-2 text-zinc-500 hover:text-black"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <span className="text-xs text-zinc-400">
-                    {quickViewProduct.stockCount > 0 ? `${quickViewProduct.stockCount} available` : "Out of stock"}
+                <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                  <h4 className="text-2xl md:text-3xl font-light text-white mb-3 tracking-wide">
+                    {section.title}
+                  </h4>
+                  <p className="text-zinc-300 font-serif italic mb-6">
+                    {section.description}
+                  </p>
+                  <span className="text-xs text-[#F5E6C4] uppercase tracking-[0.2em] border-b border-[#F5E6C4] pb-1 inline-block">
+                    Shop The Collection
                   </span>
                 </div>
-
-                <div className="flex gap-4">
-                  <button 
-                    onClick={() => {
-                      if (handleAddToCart(quickViewProduct, quickViewQuantity)) {
-                        setIsAdding(true);
-                        setTimeout(() => setIsAdding(false), 2000);
-                      }
-                    }}
-                    disabled={quickViewProduct.stockCount === 0}
-                    className={`flex-1 text-white text-xs uppercase tracking-widest py-3.5 transition-colors disabled:bg-zinc-300 disabled:cursor-not-allowed ${isAdding ? "bg-[#106636]" : "bg-[#106636] hover:bg-zinc-900"}`}
-                  >
-                    {isAdding ? "✓ Added" : "Add to Cart"}
-                  </button>
-                  <Link 
-                    href={`/shop/${quickViewProduct.id}`}
-                    className="flex-none px-6 py-3.5 border border-zinc-300 text-xs uppercase tracking-widest hover:border-black transition-colors text-center"
-                  >
-                    Full Details
-                  </Link>
-                </div>
               </div>
-            </div>
-
-          </div>
+            </Link>
+          ))}
         </div>
-      )}
+      </section>
 
-      {/* Cart Toast Notification */}
-      {cartToast && (
-        <div className="fixed bottom-6 right-6 z-[60] bg-[#FEFEFD] border border-zinc-200 shadow-2xl px-5 py-4 flex items-center justify-between gap-6 animate-fade-in">
-          <div className="flex items-center gap-3">
-            <div className="h-2 w-2 bg-[#106636] rounded-full" />
-            <div>
-              <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-0.5">Added to cart</p>
-              <p className="text-sm font-medium text-zinc-900">{cartToastName}</p>
-            </div>
-          </div>
-          <button onClick={() => setCartToast(false)} className="text-zinc-400 hover:text-zinc-600">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18 18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      )}
-
+      {/* Footer Call to action */}
+      <section className="py-24 px-6 text-center bg-zinc-900 mt-24">
+        <h2 className="text-2xl md:text-4xl font-light text-white mb-6">Can't decide?</h2>
+        <p className="text-zinc-400 mb-8 max-w-xl mx-auto font-light">
+          Browse our entire catalog of artisanal chocolates, premium kunafa bars, and exclusive gift boxes.
+        </p>
+        <Link
+          href="/shop"
+          className="inline-block bg-white text-zinc-900 px-8 py-4 text-xs uppercase tracking-[0.15em] hover:bg-[#F5E6C4] transition-colors"
+        >
+          View All Products
+        </Link>
+      </section>
     </div>
   );
 }

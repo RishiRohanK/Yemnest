@@ -28,13 +28,14 @@ interface Product {
   category: string;
   price: number;
   cutoffPrice: number;
+  price12Bar?: number | null;
+  cutoffPrice12Bar?: number | null;
   description: string;
   stockCount: number;
   image1: string;
   image2?: string;
   image3?: string;
   image4?: string;
-  reviews?: Review[];
   reviews?: Review[];
 }
 
@@ -139,21 +140,9 @@ export default function ProductDetailClient({
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   
-  const isRaksha = product.name.toLowerCase().includes('raksha bandhan');
-  const isBirthday = product.name.toLowerCase().includes('birthday');
-  const isAnniversary = product.name.toLowerCase().includes('anniversary');
-  const isDiwali = product.name.toLowerCase().includes('diwali');
-  const themeImages = isRaksha 
-    ? ['/images/themes/raksha-bandhan/closed.jpg', '/images/themes/raksha-bandhan/open.jpg'] 
-    : isBirthday 
-      ? ['/images/themes/birthday/closed.jpg', '/images/themes/birthday/open.jpg'] 
-      : isAnniversary
-        ? ['/images/themes/anniversary/closed.jpg', '/images/themes/anniversary/open.jpg']
-        : isDiwali
-          ? ['/images/themes/diwali/closed.jpg', '/images/themes/diwali/open.jpg']
-          : null;
+  const themeImages = [product.image1, product.image2, product.image3, product.image4].filter(Boolean) as string[];
 
-  const [activeImage, setActiveImage] = useState(themeImages ? themeImages[0] : product.image1);
+  const [activeImage, setActiveImage] = useState(themeImages[0]);
   const [isSlideshowPaused, setIsSlideshowPaused] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [cartToast, setCartToast] = useState(false);
@@ -171,8 +160,11 @@ export default function ProductDetailClient({
   const [reviewSuccess, setReviewSuccess] = useState(false);
 
   const isCustomizableBox = product.name.includes("6 Chocolate Gift Box") || product.name.includes("12 Chocolate Gift Box");
+  const isGiftBox = product.category.toLowerCase().includes("gift box") || product.name.toLowerCase().includes("special box");
+  
   const [selectedTheme, setSelectedTheme] = useState<string>("");
   const [customFestival, setCustomFestival] = useState<string>("");
+  const [selectedSize, setSelectedSize] = useState<"6" | "12">("6");
 
   useEffect(() => {
     const syncWishlist = () => {
@@ -284,10 +276,17 @@ export default function ProductDetailClient({
         }
       }
 
+      const sizeTag = isGiftBox ? selectedSize : undefined;
+      const calculatedPrice12Bar = product.price12Bar || product.price * 1.8;
+      const finalPrice = isGiftBox && selectedSize === "12" ? calculatedPrice12Bar : product.price;
+      const finalName = isGiftBox ? `${product.name} (${selectedSize} Bars)` : product.name;
+      const productToAdd = { ...product, price: finalPrice, name: finalName };
+
       const existingIndex = items.findIndex((item: any) => 
         item.product.id === product.id && 
         item.theme === selectedTheme && 
-        item.customFestival === customFestival
+        item.customFestival === customFestival &&
+        item.size === sizeTag
       );
       
       if (existingIndex > -1) {
@@ -301,7 +300,7 @@ export default function ProductDetailClient({
           toast.error(`You cannot add more. Only ${product.stockCount} in stock!`);
           return;
         }
-        items.push({ product, quantity, theme: selectedTheme, customFestival: customFestival } as any);
+        items.push({ product: productToAdd, quantity, theme: selectedTheme, customFestival: customFestival, size: sizeTag } as any);
       }
 
       const lightweightItems = items.map(item => ({
@@ -388,21 +387,45 @@ export default function ProductDetailClient({
           {/* Image Gallery */}
           <div className="reveal-el space-y-6 sticky top-24">
             <div className="group relative aspect-square w-full bg-[#FEFEFD] border border-zinc-200 overflow-hidden shadow-sm cursor-crosshair">
-              {themeImages ? (
-                <RakshaSlideshow 
-                  images={themeImages} 
-                  externalIndex={Math.max(0, themeImages.indexOf(activeImage))}
-                  onIndexChange={(i) => setActiveImage(themeImages[i])}
-                  isPaused={isSlideshowPaused}
-                />
-              ) : (
-                <Image
-                  src={activeImage}
-                  alt={product.name}
-                  fill
-                  priority
-                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-150 origin-center"
-                />
+              <RakshaSlideshow 
+                images={themeImages} 
+                externalIndex={Math.max(0, themeImages.indexOf(activeImage))}
+                onIndexChange={(i) => setActiveImage(themeImages[i])}
+                isPaused={isSlideshowPaused}
+              />
+              {themeImages.length > 1 && (
+                <>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const currentIndex = themeImages.indexOf(activeImage);
+                      const prevIndex = (currentIndex - 1 + themeImages.length) % themeImages.length;
+                      setActiveImage(themeImages[prevIndex]);
+                      setIsSlideshowPaused(true);
+                    }}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center transition-colors duration-300 text-zinc-800 hover:text-zinc-500 z-10"
+                    aria-label="Previous image"
+                  >
+                    <svg className="w-8 h-8 drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const currentIndex = themeImages.indexOf(activeImage);
+                      const nextIndex = (currentIndex + 1) % themeImages.length;
+                      setActiveImage(themeImages[nextIndex]);
+                      setIsSlideshowPaused(true);
+                    }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center transition-colors duration-300 text-zinc-800 hover:text-zinc-500 z-10"
+                    aria-label="Next image"
+                  >
+                    <svg className="w-8 h-8 drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </>
               )}
             </div>
             
@@ -444,9 +467,14 @@ export default function ProductDetailClient({
 
           {/* Product Details */}
           <div className="reveal-el flex flex-col pt-4">
-            <span className="text-[#724D26] text-[10px] font-semibold uppercase tracking-widest block mb-3">
-              {product.category}
-            </span>
+            <div className="flex flex-col gap-1 mb-3">
+              <span className="text-[#724D26] text-[10px] font-semibold uppercase tracking-widest block">
+                {product.category}
+              </span>
+              {(product.category.toLowerCase().includes("gift box") || product.name.toLowerCase().includes("special box")) && (
+                <span className="text-xs text-[#106636] font-semibold">★ Available in 6 & 12 Bar Sizes</span>
+              )}
+            </div>
             <h1 className={`text-3xl sm:text-5xl tracking-tight mb-2 ${
               product.name.toLowerCase().includes('raksha bandhan') 
                 ? 'font-serif text-[#8B0000] italic font-medium' 
@@ -469,9 +497,13 @@ export default function ProductDetailClient({
             </div>
 
             <div className="flex items-end gap-4 mb-8">
-              <span className="text-3xl font-normal text-[#106636]">₹{product.price.toFixed(2)}</span>
+              <span className="text-3xl font-normal text-[#106636]">
+                ₹{(isGiftBox && selectedSize === "12" ? (product.price12Bar || product.price * 1.8) : product.price).toFixed(2)}
+              </span>
               {(product.cutoffPrice ?? 0) > product.price && (
-                <span className="text-lg text-zinc-400 line-through mb-1">₹{product.cutoffPrice.toFixed(2)}</span>
+                <span className="text-lg text-zinc-400 line-through mb-1">
+                  ₹{(isGiftBox && selectedSize === "12" ? (product.cutoffPrice12Bar || product.cutoffPrice! * 1.8) : product.cutoffPrice!).toFixed(2)}
+                </span>
               )}
             </div>
 
@@ -500,6 +532,29 @@ export default function ProductDetailClient({
                 Sustainably sourced micro-lots
               </li>
             </ul>
+
+            {/* Size Options for Gift Boxes */}
+            {isGiftBox && (
+              <div className="bg-[#FEFEFD] p-6 border border-zinc-200 shadow-sm mb-6">
+                <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-3">
+                  Select Size
+                </label>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => setSelectedSize("6")}
+                    className={`flex-1 py-3 text-sm font-medium border transition-colors ${selectedSize === "6" ? "border-[#106636] bg-[#106636]/5 text-[#106636]" : "border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}
+                  >
+                    6 Bars
+                  </button>
+                  <button 
+                    onClick={() => setSelectedSize("12")}
+                    className={`flex-1 py-3 text-sm font-medium border transition-colors ${selectedSize === "12" ? "border-[#106636] bg-[#106636]/5 text-[#106636]" : "border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}
+                  >
+                    12 Bars
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Customization Options for Gift Boxes */}
             {isCustomizableBox && (
