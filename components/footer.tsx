@@ -14,7 +14,7 @@ export default function Footer() {
     <footer className="bg-zinc-950 text-zinc-300 pt-4 pb-2 border-t border-zinc-900 mt-auto">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
-          
+
           {/* Brand Section */}
           <div className="space-y-2 max-w-xs">
             <Link href="/" className="inline-block">
@@ -24,7 +24,6 @@ export default function Footer() {
                 width={120}
                 height={34}
                 className="h-8 w-auto object-contain brightness-0 invert opacity-90 hover:opacity-100 transition-opacity"
-                style={{ width: 'auto', height: 'auto' }}
               />
             </Link>
             <p className="text-sm text-zinc-400 leading-relaxed max-w-xs">
@@ -76,7 +75,7 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} Yemnest. All rights reserved.
           </p>
           <div className="flex items-center text-zinc-500">
-            <span className="text-[10px]">Developed by Student Forge</span>
+            <span className="text-[10px]">Designed, Developed & Managed by Forge Digital Technologies</span>
           </div>
         </div>
       </div>

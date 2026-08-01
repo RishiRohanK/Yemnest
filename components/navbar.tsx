@@ -55,7 +55,7 @@ export default function Navbar() {
   // Global Wishlist Drawer State
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
-  
+
   // Toast state
   const [cartToast, setCartToast] = useState(false);
   const [cartToastName, setCartToastName] = useState("");
@@ -241,7 +241,7 @@ export default function Navbar() {
   if (pathname && pathname.startsWith("/admin")) return null;
 
   return (
-    <nav 
+    <nav
       onMouseLeave={() => setIsSearchOpen(false)}
       className="relative sticky top-0 z-[100] w-full bg-[#FEFEFD] border-b border-zinc-200/60 shadow-sm rounded-none"
     >
@@ -256,14 +256,13 @@ export default function Navbar() {
                 width={200}
                 height={56}
                 className="h-14 w-auto object-contain transition-transform duration-300 group-hover:scale-105 rounded-none"
-                style={{ width: 'auto', height: 'auto' }}
                 priority
               />
             </Link>
           </div>
 
           {/* Desktop Navigation Links */}
-          <div 
+          <div
             onMouseEnter={() => setIsSearchOpen(false)}
             className="hidden md:flex items-center justify-center space-x-10 flex-2"
           >
@@ -563,7 +562,7 @@ export default function Navbar() {
 
       {/* Slide-down Search Bar */}
       {isSearchOpen && (
-        <div 
+        <div
           onMouseLeave={() => setIsSearchOpen(false)}
           className="absolute inset-x-0 top-full bg-[#FEFEFD] border-b border-zinc-200 shadow-md py-4 px-4 sm:px-6 lg:px-8 z-30 transition-all duration-200 rounded-none"
         >
@@ -778,11 +777,11 @@ export default function Navbar() {
       {/* Global Slide-out Cart Drawer */}
       {isCartOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden bg-black/40 animate-fade-in flex justify-end" onClick={() => setIsCartOpen(false)}>
-          <div 
+          <div
             className="w-screen max-w-md bg-[#FEFEFD] border-l border-zinc-200 p-6 flex flex-col justify-between shadow-2xl animate-slide-in relative"
             onClick={(e) => e.stopPropagation()}
           >
-            
+
             {/* Drawer Header */}
             <div className="flex justify-between items-center border-b border-zinc-150 pb-4 mb-4">
               <h2 className="text-lg font-light uppercase tracking-wider text-zinc-800">Your Cart</h2>
@@ -845,7 +844,7 @@ export default function Navbar() {
                         <p className="text-[10px] text-zinc-400 mb-1 mt-0.5">
                           Price: ₹{item.product.price.toFixed(2)}
                         </p>
-                        
+
                         {/* Interactive Quantity controls */}
                         <div className="flex items-center gap-1.5 mt-1">
                           <button
@@ -876,7 +875,7 @@ export default function Navbar() {
                           type="button"
                           onClick={() => {
                             const updated = cartItems.filter((_, i) => i !== index);
-                            
+
                             // Strip huge fields to prevent QuotaExceededError
                             const lightweightUpdated = updated.map(uItem => ({
                               ...uItem,
@@ -927,11 +926,11 @@ export default function Navbar() {
       {/* Global Slide-out Wishlist Drawer */}
       {isWishlistOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden bg-black/40 animate-fade-in flex justify-end" onClick={() => setIsWishlistOpen(false)}>
-          <div 
+          <div
             className="w-screen max-w-md bg-[#FEFEFD] border-l border-zinc-200 p-6 flex flex-col justify-between shadow-2xl animate-slide-in relative"
             onClick={(e) => e.stopPropagation()}
           >
-            
+
             <div className="flex justify-between items-center border-b border-zinc-150 pb-4 mb-4">
               <h2 className="text-lg font-light uppercase tracking-wider text-zinc-800">Your Wishlist</h2>
               <button
@@ -996,7 +995,7 @@ export default function Navbar() {
                             const stored = localStorage.getItem("yemnest_cart_items");
                             let items = [];
                             if (stored) {
-                              try { items = JSON.parse(stored); } catch (e) {}
+                              try { items = JSON.parse(stored); } catch (e) { }
                             }
                             const existingIndex = items.findIndex((i: any) => i.product.id === item.id);
                             if (existingIndex > -1) {
@@ -1004,7 +1003,7 @@ export default function Navbar() {
                             } else {
                               items.push({ product: item, quantity: 1 });
                             }
-                            
+
                             const lightweightUpdated = items.map((i: any) => ({
                               ...i, product: { ...i.product, image1: "", image2: "", image3: "", image4: "", description: "" }
                             }));
@@ -1012,12 +1011,12 @@ export default function Navbar() {
                             const updatedCount = items.reduce((sum: number, i: any) => sum + (i.quantity || 1), 0);
                             localStorage.setItem("yemnest_cart_count", updatedCount.toString());
                             window.dispatchEvent(new Event("yemnest_cart_updated"));
-                            
+
                             // Show toast
                             setCartToastName(item.name);
                             setCartToast(true);
                             setTimeout(() => setCartToast(false), 3000);
-                            
+
                             setAddedWishlistIds(prev => [...prev, item.id]);
                             setTimeout(() => {
                               setAddedWishlistIds(prev => prev.filter(id => id !== item.id));
