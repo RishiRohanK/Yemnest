@@ -256,6 +256,7 @@ export default function Navbar() {
                 width={200}
                 height={56}
                 className="h-14 w-auto object-contain transition-transform duration-300 group-hover:scale-105 rounded-none"
+                style={{ width: 'auto', height: 'auto' }}
                 priority
               />
             </Link>
