@@ -24,6 +24,30 @@ interface Product {
 
 const CATEGORIES = ["All", "Kunafa Bars", "Gift Boxes", "Atelier Specialties"];
 
+const RakshaSlideshow = ({ images }: { images: string[] }) => {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % images.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [images]);
+  return (
+    <div className="relative w-full h-full overflow-hidden">
+      {images.map((img, i) => (
+        <Image
+          key={img}
+          src={img}
+          alt="Product"
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className={`object-cover transition-opacity duration-700 ${i === index ? "opacity-100" : "opacity-0"}`}
+        />
+      ))}
+    </div>
+  );
+};
+
 const ProductCard = memo(({ product, onAddToCart, priority, isWishlisted, onToggleWishlist }: { product: Product, onAddToCart: (p: Product) => void, priority: boolean, isWishlisted: boolean, onToggleWishlist: (p: Product) => void }) => {
   const [isAdded, setIsAdded] = useState(false);
   
@@ -59,23 +83,35 @@ const ProductCard = memo(({ product, onAddToCart, priority, isWishlisted, onTogg
         {/* Image Container */}
         <div className="relative aspect-[4/5] w-full overflow-hidden bg-zinc-50 mb-4 rounded-3xl shadow-sm border border-zinc-200/40">
           <Link href={`/shop/${product.id}`} className="relative block w-full h-full">
-            {/* Primary Image */}
-            <Image
-              src={product.image1}
-              alt={product.name}
-              fill
-              priority={priority}
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover transition-opacity duration-500 z-10 group-hover:opacity-0"
-            />
-            {/* Hover Image (Fallback to image1 if image2 is missing) */}
-            <Image
-              src={product.image2 || product.image1}
-              alt={product.name + " hover"}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover transition-transform duration-700 scale-105 group-hover:scale-100 z-0"
-            />
+            {product.name.toLowerCase().includes('raksha bandhan') ? (
+              <RakshaSlideshow images={['/images/themes/raksha-bandhan/closed.jpg', '/images/themes/raksha-bandhan/open.jpg']} />
+            ) : product.name.toLowerCase().includes('birthday') ? (
+              <RakshaSlideshow images={['/images/themes/birthday/closed.jpg', '/images/themes/birthday/open.jpg']} />
+            ) : product.name.toLowerCase().includes('anniversary') ? (
+              <RakshaSlideshow images={['/images/themes/anniversary/closed.jpg', '/images/themes/anniversary/open.jpg']} />
+            ) : product.name.toLowerCase().includes('diwali') ? (
+              <RakshaSlideshow images={['/images/themes/diwali/closed.jpg', '/images/themes/diwali/open.jpg']} />
+            ) : (
+              <>
+                {/* Primary Image */}
+                <Image
+                  src={product.image1}
+                  alt={product.name}
+                  fill
+                  priority={priority}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-cover transition-opacity duration-500 z-10 group-hover:opacity-0"
+                />
+                {/* Hover Image (Fallback to image1 if image2 is missing) */}
+                <Image
+                  src={product.image2 || product.image1}
+                  alt={product.name + " hover"}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-cover transition-transform duration-700 scale-105 group-hover:scale-100 z-0"
+                />
+              </>
+            )}
           </Link>
         </div>
 
@@ -117,7 +153,7 @@ const ProductCard = memo(({ product, onAddToCart, priority, isWishlisted, onTogg
                 setTimeout(() => setIsAdded(false), 2000);
               }}
               disabled={product.stockCount === 0}
-              className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${isAdded ? "bg-[#106636] text-white" : "bg-zinc-100 hover:bg-[#106636] text-zinc-900 hover:text-white"}`}
+              className={`w-10 h-10 shrink-0 flex items-center justify-center rounded-full transition-colors ${isAdded ? "bg-[#106636] text-white" : "bg-zinc-100 hover:bg-[#106636] text-zinc-900 hover:text-white"}`}
             >
               {isAdded ? (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

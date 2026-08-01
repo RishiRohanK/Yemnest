@@ -35,7 +35,99 @@ interface Product {
   image3?: string;
   image4?: string;
   reviews?: Review[];
+  reviews?: Review[];
 }
+
+const themesData = [
+  {
+    theme: "Raksha Bandhan",
+    closedImage: "/images/themes/raksha-bandhan/closed.jpg",
+    openImage: "/images/themes/raksha-bandhan/open.jpg",
+    caption: "A thread of love, a bond forever. Celebrate with our Raksha Bandhan special box."
+  },
+  {
+    theme: "Birthday",
+    closedImage: "/images/themes/birthday/closed.jpg",
+    openImage: "/images/themes/birthday/open.jpg",
+    caption: "Make every birthday sweeter with our special customized box."
+  },
+  {
+    theme: "Anniversary",
+    closedImage: "/images/themes/anniversary/closed.jpg",
+    openImage: "/images/themes/anniversary/open.jpg",
+    caption: "Love grows sweeter with every anniversary."
+  },
+  {
+    theme: "Diwali",
+    closedImage: "/images/themes/diwali/closed.jpg",
+    openImage: "/images/themes/diwali/open.jpg",
+    caption: "Every bite, a Diwali celebration."
+  }
+];
+
+function ThemeCard({ theme }: { theme: typeof themesData[0] }) {
+  const [showOpen, setShowOpen] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setShowOpen(prev => !prev);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="bg-white border border-zinc-200 p-4 shadow-sm flex flex-col h-full hover:border-[#106636] transition-colors">
+      <div className="relative aspect-[4/3] w-full overflow-hidden mb-4 bg-zinc-50">
+        <Image 
+          src={theme.closedImage} 
+          alt={`${theme.theme} Closed`} 
+          fill 
+          className={`object-cover transition-opacity duration-1000 ease-in-out ${showOpen ? 'opacity-0' : 'opacity-100'}`} 
+        />
+        <Image 
+          src={theme.openImage} 
+          alt={`${theme.theme} Open`} 
+          fill 
+          className={`object-cover transition-opacity duration-1000 ease-in-out ${showOpen ? 'opacity-100' : 'opacity-0'}`} 
+        />
+      </div>
+      <h3 className="text-sm font-semibold uppercase tracking-widest text-[#724D26] mb-2">{theme.theme}</h3>
+      <p className="text-xs text-zinc-600 leading-relaxed italic">{theme.caption}</p>
+    </div>
+  );
+}
+
+const RakshaSlideshow = ({ images, externalIndex, onIndexChange, isPaused }: { images: string[], externalIndex?: number, onIndexChange?: (i: number) => void, isPaused?: boolean }) => {
+  const [index, setIndex] = useState(0);
+  const displayIndex = externalIndex !== undefined ? externalIndex : index;
+  
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(() => {
+      if (onIndexChange) {
+        onIndexChange((displayIndex + 1) % images.length);
+      } else {
+        setIndex((prev) => (prev + 1) % images.length);
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [images.length, displayIndex, onIndexChange]);
+
+  return (
+    <div className="relative w-full h-full overflow-hidden">
+      {images.map((img, i) => (
+        <Image
+          key={img}
+          src={img}
+          alt="Product"
+          fill
+          priority
+          className={`object-cover transition-opacity duration-700 ${i === displayIndex ? "opacity-100" : "opacity-0"}`}
+        />
+      ))}
+    </div>
+  );
+};
 
 export default function ProductDetailClient({ 
   product, 
@@ -47,7 +139,22 @@ export default function ProductDetailClient({
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   
-  const [activeImage, setActiveImage] = useState(product.image1);
+  const isRaksha = product.name.toLowerCase().includes('raksha bandhan');
+  const isBirthday = product.name.toLowerCase().includes('birthday');
+  const isAnniversary = product.name.toLowerCase().includes('anniversary');
+  const isDiwali = product.name.toLowerCase().includes('diwali');
+  const themeImages = isRaksha 
+    ? ['/images/themes/raksha-bandhan/closed.jpg', '/images/themes/raksha-bandhan/open.jpg'] 
+    : isBirthday 
+      ? ['/images/themes/birthday/closed.jpg', '/images/themes/birthday/open.jpg'] 
+      : isAnniversary
+        ? ['/images/themes/anniversary/closed.jpg', '/images/themes/anniversary/open.jpg']
+        : isDiwali
+          ? ['/images/themes/diwali/closed.jpg', '/images/themes/diwali/open.jpg']
+          : null;
+
+  const [activeImage, setActiveImage] = useState(themeImages ? themeImages[0] : product.image1);
+  const [isSlideshowPaused, setIsSlideshowPaused] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [cartToast, setCartToast] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -62,6 +169,10 @@ export default function ProductDetailClient({
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState("");
   const [reviewSuccess, setReviewSuccess] = useState(false);
+
+  const isCustomizableBox = product.name.includes("6 Chocolate Gift Box") || product.name.includes("12 Chocolate Gift Box");
+  const [selectedTheme, setSelectedTheme] = useState<string>("");
+  const [customFestival, setCustomFestival] = useState<string>("");
 
   useEffect(() => {
     const syncWishlist = () => {
@@ -173,7 +284,12 @@ export default function ProductDetailClient({
         }
       }
 
-      const existingIndex = items.findIndex((item) => item.product.id === product.id);
+      const existingIndex = items.findIndex((item: any) => 
+        item.product.id === product.id && 
+        item.theme === selectedTheme && 
+        item.customFestival === customFestival
+      );
+      
       if (existingIndex > -1) {
         if (items[existingIndex].quantity + quantity > product.stockCount) {
           toast.error(`You cannot add more. Only ${product.stockCount} in stock!`);
@@ -185,7 +301,7 @@ export default function ProductDetailClient({
           toast.error(`You cannot add more. Only ${product.stockCount} in stock!`);
           return;
         }
-        items.push({ product, quantity });
+        items.push({ product, quantity, theme: selectedTheme, customFestival: customFestival } as any);
       }
 
       const lightweightItems = items.map(item => ({
@@ -272,21 +388,33 @@ export default function ProductDetailClient({
           {/* Image Gallery */}
           <div className="reveal-el space-y-6 sticky top-24">
             <div className="group relative aspect-square w-full bg-[#FEFEFD] border border-zinc-200 overflow-hidden shadow-sm cursor-crosshair">
-              <Image
-                src={activeImage}
-                alt={product.name}
-                fill
-                priority
-                className="object-cover transition-transform duration-700 ease-out group-hover:scale-150 origin-center"
-              />
+              {themeImages ? (
+                <RakshaSlideshow 
+                  images={themeImages} 
+                  externalIndex={Math.max(0, themeImages.indexOf(activeImage))}
+                  onIndexChange={(i) => setActiveImage(themeImages[i])}
+                  isPaused={isSlideshowPaused}
+                />
+              ) : (
+                <Image
+                  src={activeImage}
+                  alt={product.name}
+                  fill
+                  priority
+                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-150 origin-center"
+                />
+              )}
             </div>
             
-            {thumbnails.length > 1 && (
+            {themeImages ? (
               <div className="flex gap-4">
-                {thumbnails.map((imgUrl, idx) => (
+                {themeImages.map((imgUrl, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setActiveImage(imgUrl)}
+                    onClick={() => {
+                      setActiveImage(imgUrl);
+                      setIsSlideshowPaused(true);
+                    }}
                     className={`relative w-20 h-20 border overflow-hidden bg-[#FEFEFD] transition-all rounded-none ${
                       activeImage === imgUrl ? "border-[#106636] ring-1 ring-[#106636]" : "border-zinc-200 hover:border-zinc-400"
                     }`}
@@ -295,6 +423,22 @@ export default function ProductDetailClient({
                   </button>
                 ))}
               </div>
+            ) : (
+              thumbnails.length > 1 && (
+                <div className="flex gap-4">
+                  {thumbnails.map((imgUrl, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveImage(imgUrl)}
+                      className={`relative w-20 h-20 border overflow-hidden bg-[#FEFEFD] transition-all rounded-none ${
+                        activeImage === imgUrl ? "border-[#106636] ring-1 ring-[#106636]" : "border-zinc-200 hover:border-zinc-400"
+                      }`}
+                    >
+                      <Image src={imgUrl} alt="Thumbnail" fill className="object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )
             )}
           </div>
 
@@ -356,6 +500,46 @@ export default function ProductDetailClient({
                 Sustainably sourced micro-lots
               </li>
             </ul>
+
+            {/* Customization Options for Gift Boxes */}
+            {isCustomizableBox && (
+              <div className="bg-[#FEFEFD] p-6 border border-zinc-200 shadow-sm mb-6">
+                <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-3">
+                  Select Theme (Optional)
+                </label>
+                <select 
+                  value={selectedTheme} 
+                  onChange={(e) => {
+                    setSelectedTheme(e.target.value);
+                    if (e.target.value !== "Customized Festival") {
+                      setCustomFestival("");
+                    }
+                  }}
+                  className="w-full px-3 py-3 border border-zinc-200 text-sm focus:outline-none focus:border-[#106636] mb-4 bg-white"
+                >
+                  <option value="">No Theme</option>
+                  <option value="Birthday">Birthday</option>
+                  <option value="Anniversary">Anniversary</option>
+                  <option value="Raksha Bandhan">Raksha Bandhan</option>
+                  <option value="Customized Festival">Customized Festival (Enter below)</option>
+                </select>
+
+                {selectedTheme === "Customized Festival" && (
+                  <div className="animate-fade-in">
+                    <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-2">
+                      Festival Name
+                    </label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Diwali, Eid, Christmas..."
+                      value={customFestival}
+                      onChange={(e) => setCustomFestival(e.target.value)}
+                      className="w-full px-3 py-3 border border-zinc-200 text-sm focus:outline-none focus:border-[#106636] bg-white"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Add to Cart Actions */}
             <div className="bg-[#FEFEFD] p-6 border border-zinc-200 shadow-sm mb-8">
@@ -499,6 +683,25 @@ export default function ProductDetailClient({
             )}
           </div>
         </div>
+
+        {/* Theme Slideshow Section */}
+        {(product.name.includes("12 Chocolate Gift Box") || product.name.includes("Raksha Bandhan Special Box")) && themesData.length > 0 && (
+          <div className="reveal-el max-w-7xl mx-auto border-t border-zinc-200 pt-16 mb-24">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl font-light text-zinc-900 mb-3">Customizable Themes</h2>
+              <p className="text-sm text-zinc-500">
+                Personalize your 12 Chocolate Gift Box with our exclusive themes. 
+                Select your theme before adding to cart.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+              {themesData.map((themeData, idx) => (
+                <ThemeCard key={idx} theme={themeData} />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Real Reviews Section */}
         <div className="reveal-el max-w-4xl mx-auto border-t border-zinc-200 pt-16 mb-24">
