@@ -66,7 +66,7 @@ const STAGES = [
     title: "Packaging",
     subtitle: "Ready for You",
     desc: "Each bar is hand-wrapped in eco-friendly, artisanal paper to protect its integrity. It is finally ready to begin its final journey—to your palate.",
-    image: "/images/journey/stage-8.png",
+    image: "/images/hazelnut_filling_kunafa.png",
   },
 ];
 
@@ -121,7 +121,7 @@ export default function JourneyClient() {
           },
         }
       );
-      
+
       // Node activation (circle on the progress bar)
       gsap.to(stage.querySelector(".stage-node"), {
         backgroundColor: "#106636",
@@ -139,7 +139,7 @@ export default function JourneyClient() {
 
   return (
     <div ref={containerRef} className="min-h-screen bg-[#FAF9F6] text-zinc-900 font-sans overflow-hidden">
-      
+
       {/* Intro Hero */}
       <section className="relative pt-40 pb-24 px-4 text-center z-10">
         <span className="block text-[#724D26] text-xs uppercase tracking-[0.2em] mb-4">
@@ -155,7 +155,7 @@ export default function JourneyClient() {
 
       {/* Main Journey Content */}
       <section className="journey-content relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-32">
-        
+
         {/* Central Vertical Progress Bar */}
         <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-px bg-zinc-200 transform md:-translate-x-1/2 z-0 hidden sm:block">
           <div className="progress-bar-fill w-full bg-[#106636] h-0 origin-top" />
@@ -166,7 +166,7 @@ export default function JourneyClient() {
             const isEven = index % 2 === 0;
             return (
               <div key={stage.id} className={`stage-section flex flex-col ${isEven ? 'md:flex-row' : 'md:flex-row-reverse'} items-center gap-10 md:gap-20 relative`}>
-                
+
                 {/* Node for Desktop Timeline */}
                 <div className="stage-node absolute left-8 md:left-1/2 top-1/2 w-4 h-4 rounded-none border-2 border-zinc-300 bg-[#FAF9F6] transform -translate-y-1/2 md:-translate-x-1/2 z-20 hidden sm:block transition-colors" />
 
@@ -209,8 +209,8 @@ export default function JourneyClient() {
         <p className="text-zinc-500 text-sm mb-10 font-normal">
           Now that you've seen the journey, experience the destination.
         </p>
-        <Link 
-          href="/shop" 
+        <Link
+          href="/shop"
           className="inline-block bg-[#106636] text-white text-xs uppercase tracking-widest py-4 px-10 hover:bg-zinc-900 transition-colors shadow-md rounded-none"
         >
           Visit the Shop
