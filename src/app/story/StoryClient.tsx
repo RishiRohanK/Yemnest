@@ -132,42 +132,67 @@ export default function StoryClient() {
   }, { scope: containerRef });
 
   return (
-    <div ref={containerRef} className="story-container relative bg-[#FEFEFD] text-zinc-900 font-sans overflow-hidden selection:bg-[#106636] selection:text-white">
+    <div ref={containerRef} className="story-container relative bg-[#FAF9F6] text-zinc-900 font-sans overflow-hidden selection:bg-[#106636] selection:text-white">
 
-      {/* 1. Cinematic Hero */}
-      <section className="hero-section relative h-[80vh] flex flex-col justify-center items-center text-center overflow-hidden bg-zinc-900">
-        <div className="absolute inset-0 z-0">
-          <Image
-            src="https://ik.imagekit.io/dypkhqxip/banner1.1%20(6).png"
-            alt="The Yemnest Story"
-            fill
-            priority
-            className="hero-bg object-cover opacity-40 select-none"
-          />
-        </div>
-        <div className="relative z-10 px-4 max-w-3xl">
-          <span className="hero-el block text-[#F5E6C4] text-[10px] font-semibold tracking-[0.3em] uppercase mb-4">
+      {/* Intro Hero (Matches Cocoa Journey Style) */}
+      <section className="relative h-[40vh] md:h-[50vh] w-full flex items-center justify-center overflow-hidden">
+        <Image
+          src="/ourstoryhero.png"
+          alt="Our Legacy"
+          fill
+          className="object-cover opacity-90 brightness-50"
+          priority
+        />
+        <div className="absolute inset-0 bg-black/20" />
+        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto pt-16">
+          <span className="hero-el block text-[#F5E6C4] text-xs uppercase tracking-[0.2em] mb-4 drop-shadow-md font-semibold">
             Our Legacy
           </span>
-          <h1 className="hero-el text-5xl md:text-7xl font-light text-white tracking-tight mb-8">
-            Our Story
+          <h1 className="hero-el text-4xl md:text-6xl lg:text-7xl font-light text-white tracking-tight mb-6 drop-shadow-lg">
+            The Art of Honest Chocolate
           </h1>
-          <p className="hero-el text-sm md:text-base text-zinc-300 font-normal leading-relaxed">
-            Redefining luxury through absolute purity, obsessive craftsmanship, and a visionary approach to modern chocolate making.
+          <p className="hero-el max-w-2xl mx-auto text-base md:text-lg text-zinc-100 font-light leading-relaxed drop-shadow-md">
+            Born from a passion for purity. We reject preservatives and hidden sugars to bring you chocolate the way it was meant to be experienced.
           </p>
         </div>
       </section>
 
       {/* 2. Why Yemnest Exists (Founders Story & Vision) */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center">
-        <h2 className="fade-up text-xs text-[#724D26] uppercase tracking-[0.3em] mb-6 font-semibold">The Vision</h2>
-        <p className="fade-up text-xl md:text-3xl font-light text-zinc-900 leading-relaxed mb-10">
-          &quot;Yemnest was born from a simple realization: the world&apos;s most luxurious ingredient had been diluted by mass production. We set out to strip away the artificial and return chocolate to its purest, most breathtaking form.&quot;
-        </p>
-        <div className="fade-up w-12 h-[1px] bg-zinc-300 mx-auto mb-10" />
-        <p className="fade-up text-sm text-zinc-600 leading-relaxed max-w-2xl mx-auto">
-          Our founders traveled the globe studying traditional refining methods, only to realize that true innovation required a return to basics. By utilizing 100% pure cocoa butter and sourcing directly from ethical micro-lots, Yemnest was built on a foundation of uncompromising integrity. Our mission is to elevate chocolate from a mere confection to a curated sensory masterpiece.
-        </p>
+      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="flex flex-col lg:flex-row items-center gap-16">
+          <div className="w-full lg:w-1/2 space-y-8">
+            <div>
+              <h2 className="fade-up text-xs text-[#724D26] uppercase tracking-[0.3em] mb-4 font-semibold">The Vision</h2>
+              <p className="fade-up text-2xl md:text-4xl font-light text-zinc-900 leading-tight">
+                &quot;Yemnest was born from a simple realization: the world&apos;s most luxurious ingredient had been diluted by mass production.&quot;
+              </p>
+            </div>
+
+            <div className="fade-up w-12 h-[1px] bg-[#724D26]" />
+
+            <div className="fade-up space-y-6 text-zinc-600 font-light leading-relaxed text-sm md:text-base">
+              <p>
+                We set out to strip away the artificial and return chocolate to its purest, most breathtaking form. Our founders traveled the globe studying traditional refining methods, only to realize that true innovation required a return to basics.
+              </p>
+              <p>
+                By utilizing 100% pure cocoa butter and sourcing directly from ethical micro-lots, Yemnest was built on a foundation of uncompromising integrity. Our mission is to elevate chocolate from a mere confection to a curated sensory masterpiece.
+              </p>
+            </div>
+          </div>
+
+          <div className="w-full lg:w-1/2 relative fade-up">
+            <div className="relative h-[500px] md:h-[650px] w-full rounded-2xl overflow-hidden group shadow-xl">
+              <Image
+                src="/collectionshero.png"
+                alt="Founders Vision"
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-[2s] ease-out"
+              />
+            </div>
+            <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-[#F5E6C4] rounded-full hidden md:block -z-10 blur-2xl opacity-50" />
+            <div className="absolute -top-6 -right-6 w-40 h-40 bg-[#724D26] rounded-full hidden md:block -z-10 blur-2xl opacity-20" />
+          </div>
+        </div>
       </section>
 
       {/* 3. The Timeline (Milestones) */}
@@ -234,7 +259,7 @@ export default function StoryClient() {
           <h2 className="text-3xl font-light text-zinc-900">Brand Values</h2>
         </div>
 
-        <div className="values-grid grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+        <div className="values-grid grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
             { title: "Uncompromising Quality", desc: "We source only the top 1% of raw materials. No shortcuts, no compromises.", icon: "M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" },
             { title: "Master Craftsmanship", desc: "Tempered by hand in small batches to ensure the perfect snap and absolute gloss.", icon: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" },
@@ -256,7 +281,59 @@ export default function StoryClient() {
         </div>
       </section>
 
-      {/* 5. Editorial Craftsmanship */}
+      {/* 5. Certifications & Credentials */}
+      <section className="py-24 bg-zinc-50 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16 fade-up">
+            <span className="text-[#724D26] text-[10px] uppercase tracking-widest block mb-2">Our Credentials</span>
+            <h2 className="text-3xl font-light text-zinc-900">Certifications & Expertise</h2>
+            <p className="text-zinc-500 max-w-2xl mx-auto mt-4 text-sm leading-relaxed">
+              We uphold the highest standards of quality, safety, and culinary excellence. Our continuous pursuit of chocolate mastery is reflected in our official registrations and professional qualifications.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {/* FSSAI (PDF Link) */}
+            <a href="/images/certs/fssai.pdf" target="_blank" rel="noopener noreferrer" className="bg-white p-4 border border-zinc-100 shadow-sm rounded-xl hover:shadow-md transition-shadow group flex flex-col items-center text-center">
+              <div className="w-full aspect-[4/3] bg-zinc-100 mb-4 rounded-lg overflow-hidden relative flex items-center justify-center">
+                <svg className="w-16 h-16 text-zinc-400 group-hover:scale-110 group-hover:text-[#106636] transition-all duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span className="absolute bottom-4 text-xs font-medium text-zinc-500 bg-white/80 px-2 py-1 rounded backdrop-blur-sm">View PDF</span>
+              </div>
+              <h4 className="text-sm font-medium text-zinc-900 mb-1">FSSAI Registered</h4>
+              <p className="text-xs text-zinc-500">Certified by the Food Safety and Standards Authority of India.</p>
+            </a>
+
+            {/* GST */}
+            <a href="/images/certs/gst.jpg" target="_blank" rel="noopener noreferrer" className="bg-white p-4 border border-zinc-100 shadow-sm rounded-xl hover:shadow-md transition-shadow group flex flex-col items-center text-center">
+              <div className="w-full aspect-[4/3] bg-zinc-100 mb-4 rounded-lg overflow-hidden relative">
+                <img src="/images/certs/gst.jpg" alt="GST Registered" className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" />
+              </div>
+              <h4 className="text-sm font-medium text-zinc-900 mb-1">GST Registered</h4>
+              <p className="text-xs text-zinc-500">Officially registered under the Goods and Services Tax framework.</p>
+            </a>
+
+            {/* Craft Chocolate */}
+            <a href="/images/certs/craft-chocolate.jpg" target="_blank" rel="noopener noreferrer" className="bg-white p-4 border border-zinc-100 shadow-sm rounded-xl hover:shadow-md transition-shadow group flex flex-col items-center text-center">
+              <div className="w-full aspect-[4/3] bg-zinc-100 mb-4 rounded-lg overflow-hidden relative">
+                <img src="/images/certs/craft-chocolate.jpg" alt="Craft Chocolate Mastery" className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" />
+              </div>
+              <h4 className="text-sm font-medium text-zinc-900 mb-1">Craft Chocolate Mastery</h4>
+              <p className="text-xs text-zinc-500">Certified by the Art Chocolat Academy of Chocolate Arts.</p>
+            </a>
+
+            {/* Panning Dragees */}
+            <a href="/images/certs/panning-dragees.jpg" target="_blank" rel="noopener noreferrer" className="bg-white p-4 border border-zinc-100 shadow-sm rounded-xl hover:shadow-md transition-shadow group flex flex-col items-center text-center">
+              <div className="w-full aspect-[4/3] bg-zinc-100 mb-4 rounded-lg overflow-hidden relative">
+                <img src="/images/certs/panning-dragees.jpg" alt="Panning Dragees" className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" />
+              </div>
+              <h4 className="text-sm font-medium text-zinc-900 mb-1">Panning Dragees</h4>
+              <p className="text-xs text-zinc-500">Advanced qualification from the Art Chocolat Academy.</p>
+            </a>
+          </div>
+        </div>
+      </section>
       <section className="py-24 bg-zinc-900 text-white overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -280,7 +357,7 @@ export default function StoryClient() {
 
             <div className="fade-up grid grid-cols-2 gap-4">
               <div className="relative aspect-[3/4] overflow-hidden">
-                <Image src="https://ik.imagekit.io/dypkhqxip/banner1.1%20(2).png" alt="Crafting" fill className="object-cover opacity-80 hover:opacity-100 hover:scale-105 transition-all duration-700" />
+                <Image src="/images/themes/raksha-bandhan/6image2.png" alt="Crafting" fill className="object-cover opacity-80 hover:opacity-100 hover:scale-105 transition-all duration-700" />
               </div>
               <div className="relative aspect-[3/4] overflow-hidden mt-12">
                 <Image src="https://ik.imagekit.io/dypkhqxip/collectiosn5" alt="Crafting" fill className="object-cover opacity-80 hover:opacity-100 hover:scale-105 transition-all duration-700" />
@@ -300,7 +377,7 @@ export default function StoryClient() {
         <div className="signatures-grid grid grid-cols-1 md:grid-cols-2 gap-8">
           {[
             { name: "The Viral Kunafa Collection", desc: "Toasted kataifi, premium pistachio cream, encased in luxury chocolate.", img: "https://ik.imagekit.io/dypkhqxip/collectiosn2?updatedAt=1784063410170" },
-            { name: "Atelier Dark Series", desc: "Single-origin botanical notes delicately tempered with pure cocoa butter.", img: "https://ik.imagekit.io/dypkhqxip/banner1.1%20(1).png" },
+            { name: "The Festive Series", desc: "Exquisite hand-crafted assortments curated for your most cherished celebrations.", img: "/images/themes/diwali/image1.png" },
           ].map((prod, idx) => (
             <div key={idx} className="signature-card group relative h-[50vh] overflow-hidden bg-black flex items-end">
               <Image src={prod.img} alt={prod.name} fill className="object-cover opacity-60 group-hover:opacity-40 group-hover:scale-105 transition-all duration-700 z-0" />
@@ -336,19 +413,7 @@ export default function StoryClient() {
         </div>
       </section>
 
-      {/* 8. Final CTA */}
-      <section className="py-32 bg-[#106636] text-center px-4 relative z-10 overflow-hidden">
-        <div className="max-w-2xl mx-auto fade-up">
-          <span className="text-[#F5E6C4] text-[10px] uppercase tracking-widest font-semibold block mb-4">The Next Chapter</span>
-          <h2 className="text-3xl sm:text-5xl font-light text-[#FEFEFD] mb-6">&quot;Less, but better.&quot;</h2>
-          <Link
-            href="/collections"
-            className="inline-block text-[10px] uppercase tracking-widest text-[#106636] bg-white px-10 py-4 hover:bg-[#F5E6C4] transition-colors shadow-xl"
-          >
-            Shop The Collection
-          </Link>
-        </div>
-      </section>
+
 
     </div>
   );

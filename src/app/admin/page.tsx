@@ -55,6 +55,8 @@ interface Product {
   subLine: string;
   price: number;
   cutoffPrice: number;
+  price12Bar?: number | null;
+  cutoffPrice12Bar?: number | null;
   description: string;
   stockCount: number;
   image1: string;
@@ -70,6 +72,16 @@ interface Coupon {
   discountPercentage: number;
   isActive: boolean;
   uses: number;
+  createdAt: string;
+}
+
+interface Review {
+  id: string;
+  productId: string;
+  product?: { name: string; category: string };
+  userName: string;
+  rating: number;
+  comment: string;
   createdAt: string;
 }
 
@@ -113,7 +125,19 @@ function ImageDropZone({ image, setImage, label }: ImageDropZoneProps) {
     const reader = new FileReader();
     reader.onload = (e) => {
       if (e.target?.result) {
-        setImage(e.target.result as string);
+        const img = new window.Image();
+        img.src = e.target.result as string;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const MAX_WIDTH = 800;
+          const scaleSize = MAX_WIDTH / img.width;
+          canvas.width = MAX_WIDTH;
+          canvas.height = img.height * scaleSize;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+          setImage(compressedBase64);
+        };
       }
     };
     reader.readAsDataURL(file);
@@ -207,7 +231,7 @@ export default function AdminPage() {
 
   // Dashboard Data State
   const [activeTab, setActiveTab] = useState<
-    "overview" | "orders" | "users" | "products" | "coupons"
+    "overview" | "orders" | "users" | "products" | "coupons" | "reviews"
   >("overview");
   
   const [metrics, setMetrics] = useState<Metrics>({ 
@@ -222,7 +246,11 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   
+  const [isAddingReview, setIsAddingReview] = useState(false);
+  const [newReview, setNewReview] = useState({ productId: "", userName: "", rating: 5, comment: "" });
+
   const [dashboardLoading, setDashboardLoading] = useState(false);
 
   const [revenueFilter, setRevenueFilter] = useState<"all" | "today" | "week" | "month" | "lastMonth" | "10days" | "15days" | "custom">("all");
@@ -300,6 +328,8 @@ export default function AdminPage() {
   const [prodSubLine, setProdSubLine] = useState("");
   const [prodPrice, setProdPrice] = useState("");
   const [prodCutoffPrice, setProdCutoffPrice] = useState("");
+  const [prodPrice12Bar, setProdPrice12Bar] = useState("");
+  const [prodCutoffPrice12Bar, setProdCutoffPrice12Bar] = useState("");
   const [prodDescription, setProdDescription] = useState("");
   const [prodStock, setProdStock] = useState("");
   const [prodCategory, setProdCategory] = useState("Atelier Specialties");
@@ -423,6 +453,13 @@ export default function AdminPage() {
       if (resCoupons.ok) {
         setCoupons(dataCoupons);
       }
+
+      // Fetch Reviews
+      const resReviews = await fetch("/api/admin/reviews");
+      const dataReviews = await resReviews.json();
+      if (resReviews.ok) {
+        setReviews(dataReviews);
+      }
     } catch (err) {
       toast.error("Failed to fetch dashboard data.");
     } finally {
@@ -538,6 +575,8 @@ export default function AdminPage() {
     setProdSubLine("");
     setProdPrice("");
     setProdCutoffPrice("");
+    setProdPrice12Bar("");
+    setProdCutoffPrice12Bar("");
     setProdDescription("");
     setProdStock("");
     setProdImage1("");
@@ -555,6 +594,8 @@ export default function AdminPage() {
     setProdSubLine(p.subLine);
     setProdPrice(p.price.toString());
     setProdCutoffPrice(p.cutoffPrice.toString());
+    setProdPrice12Bar(p.price12Bar ? p.price12Bar.toString() : "");
+    setProdCutoffPrice12Bar(p.cutoffPrice12Bar ? p.cutoffPrice12Bar.toString() : "");
     setProdDescription(p.description);
     setProdStock(p.stockCount.toString());
     setProdImage1(p.image1);
@@ -578,6 +619,43 @@ export default function AdminPage() {
     } catch (err) {
       console.error(err);
       toast.error("An error occurred.");
+    }
+  };
+
+  const handleMoveProduct = async (index: number, direction: "up" | "down") => {
+    if (direction === "up" && index === 0) return;
+    if (direction === "down" && index === products.length - 1) return;
+
+    const newProducts = [...products];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+
+    // Swap locally
+    const temp = newProducts[index];
+    newProducts[index] = newProducts[targetIndex];
+    newProducts[targetIndex] = temp;
+
+    // Re-assign display orders based on array index
+    const updates = newProducts.map((p, i) => ({
+      id: p.id,
+      displayOrder: i
+    }));
+
+    setProducts(newProducts);
+
+    try {
+      const res = await fetch("/api/admin/products/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ updates })
+      });
+      if (!res.ok) {
+        throw new Error("Failed to save order");
+      }
+      toast.success("Products reordered!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save order.");
+      fetchDashboardData(); // Revert back to original
     }
   };
 
@@ -614,6 +692,8 @@ export default function AdminPage() {
         subLine: prodSubLine,
         price: parseFloat(prodPrice),
         cutoffPrice: parseFloat(prodCutoffPrice),
+        price12Bar: prodPrice12Bar ? parseFloat(prodPrice12Bar) : null,
+        cutoffPrice12Bar: prodCutoffPrice12Bar ? parseFloat(prodCutoffPrice12Bar) : null,
         description: prodDescription,
         stockCount: parseInt(prodStock, 10),
         image1: prodImage1,
@@ -803,6 +883,50 @@ export default function AdminPage() {
     return <span className="text-xs text-zinc-500">{itemsStr}</span>;
   };
 
+  const handleAddReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newReview.productId || !newReview.userName || !newReview.rating) {
+      toast.error("Please fill required review fields.");
+      return;
+    }
+    const toastId = toast.loading("Adding review...");
+    try {
+      const res = await fetch("/api/admin/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newReview),
+      });
+      if (res.ok) {
+        const addedReview = await res.json();
+        setReviews([addedReview, ...reviews]);
+        setIsAddingReview(false);
+        setNewReview({ productId: "", userName: "", rating: 5, comment: "" });
+        toast.success("Review added successfully", { id: toastId });
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to add review", { id: toastId });
+      }
+    } catch (e) {
+      toast.error("Error adding review", { id: toastId });
+    }
+  };
+
+  const handleDeleteReview = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this review?")) return;
+    const toastId = toast.loading("Deleting review...");
+    try {
+      const res = await fetch(`/api/admin/reviews/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setReviews(reviews.filter((r) => r.id !== id));
+        toast.success("Review deleted", { id: toastId });
+      } else {
+        toast.error("Failed to delete review", { id: toastId });
+      }
+    } catch (e) {
+      toast.error("Error deleting review", { id: toastId });
+    }
+  };
+
   // Render Dashboard
   return (
     <div className="flex-1 min-h-screen bg-[#FAF9F6] flex flex-col md:flex-row text-zinc-900 font-sans">
@@ -861,13 +985,23 @@ export default function AdminPage() {
             </button>
             <button
               onClick={() => { setActiveTab("coupons"); setIsEditingProduct(false); }}
-              className={`w-full text-left px-4 py-2.5 text-xs uppercase tracking-wider font-normal transition-colors ${
+              className={`w-full text-left px-4 py-2 text-xs uppercase tracking-widest transition-colors ${
                 activeTab === "coupons"
-                  ? "bg-[#106636] text-white"
-                  : "hover:bg-zinc-800 hover:text-white"
+                  ? "bg-[#106636] text-white font-medium shadow-inner"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-800"
               }`}
             >
-              Discount Codes
+              Coupons
+            </button>
+            <button
+              onClick={() => { setActiveTab("reviews"); setIsEditingProduct(false); }}
+              className={`w-full text-left px-4 py-2 text-xs uppercase tracking-widest transition-colors ${
+                activeTab === "reviews"
+                  ? "bg-[#106636] text-white font-medium shadow-inner"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+              }`}
+            >
+              Reviews
             </button>
           </nav>
         </div>
@@ -882,6 +1016,7 @@ export default function AdminPage() {
             {activeTab === "products" && "Product Inventory"}
             {activeTab === "users" && "Registered Users"}
             {activeTab === "coupons" && "Discount Codes"}
+            {activeTab === "reviews" && "Customer Reviews"}
           </h1>
           <div className="flex items-center gap-4">
             {/* Notification Bell */}
@@ -1315,7 +1450,7 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {products.map((product) => (
+                      {products.map((product, index) => (
                         <tr key={product.id} className="border-b border-zinc-150 hover:bg-zinc-50/50 align-middle">
                           <td className="py-3 flex items-center gap-3">
                             <div className="relative w-10 h-10 border border-zinc-200">
@@ -1334,6 +1469,22 @@ export default function AdminPage() {
                             </span>
                           </td>
                           <td className="py-3 text-right space-x-2">
+                            <button 
+                              onClick={() => handleMoveProduct(index, "up")} 
+                              disabled={index === 0}
+                              className="text-zinc-400 hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
+                              title="Move Up"
+                            >
+                              <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"></path></svg>
+                            </button>
+                            <button 
+                              onClick={() => handleMoveProduct(index, "down")} 
+                              disabled={index === products.length - 1}
+                              className="text-zinc-400 hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
+                              title="Move Down"
+                            >
+                              <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
                             <button onClick={() => openEditProductForm(product)} className="text-[#106636] hover:underline uppercase tracking-wider text-[10px]">Edit</button>
                             <button onClick={() => handleDeleteProduct(product.id)} className="text-red-600 hover:underline uppercase tracking-wider text-[10px]">Delete</button>
                           </td>
@@ -1397,7 +1548,7 @@ export default function AdminPage() {
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
-                    Price (₹)
+                    Price 6-Bar (₹)
                   </label>
                   <input
                     type="number"
@@ -1411,7 +1562,7 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
-                    Cutoff Price (₹)
+                    Cutoff 6-Bar (₹)
                   </label>
                   <input
                     type="number"
@@ -1423,6 +1574,34 @@ export default function AdminPage() {
                     placeholder="799.00"
                   />
                 </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
+                    Price 12-Bar (₹)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={prodPrice12Bar}
+                    onChange={(e) => setProdPrice12Bar(e.target.value)}
+                    className="w-full px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none"
+                    placeholder="899.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
+                    Cutoff 12-Bar (₹)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={prodCutoffPrice12Bar}
+                    onChange={(e) => setProdCutoffPrice12Bar(e.target.value)}
+                    className="w-full px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none"
+                    placeholder="999.00"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
                     Stock count
@@ -1623,6 +1802,121 @@ export default function AdminPage() {
                         </td>
                         <td className="py-4 text-zinc-500">
                           {new Date(user.createdAt).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Reviews Tab */}
+        {activeTab === "reviews" && (
+          <div className="bg-[#FEFEFD] border border-zinc-200 p-6 animate-fade-in shadow-sm">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-sm uppercase tracking-widest text-zinc-900 font-medium">Customer Reviews</h3>
+              <button
+                onClick={() => setIsAddingReview(!isAddingReview)}
+                className="bg-[#106636] text-white px-6 py-2 text-xs uppercase tracking-widest hover:bg-zinc-900 transition-colors shadow-sm"
+              >
+                {isAddingReview ? "Cancel" : "Add Review"}
+              </button>
+            </div>
+
+            {isAddingReview && (
+              <form onSubmit={handleAddReview} className="mb-8 bg-zinc-50 p-6 border border-zinc-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-2 font-medium">Product</label>
+                    <select
+                      value={newReview.productId}
+                      onChange={(e) => setNewReview({ ...newReview, productId: e.target.value })}
+                      className="w-full bg-white border border-zinc-200 px-4 py-2 text-sm text-zinc-900 focus:outline-none focus:border-[#106636] transition-colors"
+                      required
+                    >
+                      <option value="">Select a product</option>
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-2 font-medium">Customer Name</label>
+                    <input
+                      type="text"
+                      value={newReview.userName}
+                      onChange={(e) => setNewReview({ ...newReview, userName: e.target.value })}
+                      className="w-full bg-white border border-zinc-200 px-4 py-2 text-sm text-zinc-900 focus:outline-none focus:border-[#106636] transition-colors"
+                      placeholder="e.g. John D."
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-2 font-medium">Rating (1-5)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="5"
+                      value={newReview.rating}
+                      onChange={(e) => setNewReview({ ...newReview, rating: parseInt(e.target.value) || 5 })}
+                      className="w-full bg-white border border-zinc-200 px-4 py-2 text-sm text-zinc-900 focus:outline-none focus:border-[#106636] transition-colors"
+                      required
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-2 font-medium">Comment</label>
+                    <textarea
+                      value={newReview.comment}
+                      onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                      className="w-full bg-white border border-zinc-200 px-4 py-2 text-sm text-zinc-900 focus:outline-none focus:border-[#106636] transition-colors h-24 resize-y"
+                      placeholder="Customer's review text..."
+                      required
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  className="bg-zinc-900 text-white px-8 py-2.5 text-xs uppercase tracking-widest hover:bg-[#106636] transition-colors shadow-sm"
+                >
+                  Save Review
+                </button>
+              </form>
+            )}
+
+            {reviews.length === 0 ? (
+              <p className="text-xs text-zinc-400">No reviews found.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse min-w-[800px]">
+                  <thead>
+                    <tr className="border-b border-zinc-250 text-zinc-500 uppercase tracking-wider">
+                      <th className="py-2.5 font-medium">Customer</th>
+                      <th className="py-2.5 font-medium">Product</th>
+                      <th className="py-2.5 font-medium">Rating</th>
+                      <th className="py-2.5 font-medium">Comment</th>
+                      <th className="py-2.5 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reviews.map((review) => (
+                      <tr key={review.id} className="border-b border-zinc-150 hover:bg-zinc-50/50 align-top">
+                        <td className="py-4 font-medium text-zinc-800">{review.userName}</td>
+                        <td className="py-4 text-zinc-600">
+                          {review.product?.name || "Unknown Product"}
+                        </td>
+                        <td className="py-4 text-[#106636] tracking-widest font-bold">
+                          {"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}
+                        </td>
+                        <td className="py-4 text-zinc-600 max-w-xs truncate">{review.comment}</td>
+                        <td className="py-4 text-right">
+                          <button
+                            onClick={() => handleDeleteReview(review.id)}
+                            className="text-red-500 hover:text-red-700 uppercase tracking-widest text-[9px] font-medium transition-colors"
+                          >
+                            Delete
+                          </button>
                         </td>
                       </tr>
                     ))}

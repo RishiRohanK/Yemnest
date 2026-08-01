@@ -12,7 +12,9 @@ interface Product {
   subLine: string;
   category: string;
   price: number;
-  cutoffPrice: number;
+  cutoffPrice?: number;
+  price12Bar?: number | null;
+  cutoffPrice12Bar?: number | null;
   description: string;
   stockCount: number;
   image1: string;
@@ -25,26 +27,25 @@ interface Product {
 const CATEGORIES = ["All", "Kunafa Bars", "Gift Boxes", "Atelier Specialties"];
 
 const RakshaSlideshow = ({ images }: { images: string[] }) => {
-  const [index, setIndex] = useState(0);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % images.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [images]);
   return (
-    <div className="relative w-full h-full overflow-hidden">
-      {images.map((img, i) => (
+    <>
+      <Image
+        src={images[0]}
+        alt="Product"
+        fill
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        className="object-cover transition-opacity duration-500 z-10 group-hover:opacity-0"
+      />
+      {images[1] && (
         <Image
-          key={img}
-          src={img}
-          alt="Product"
+          src={images[1]}
+          alt="Product hover"
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className={`object-cover transition-opacity duration-700 ${i === index ? "opacity-100" : "opacity-0"}`}
+          className="object-cover transition-transform duration-700 scale-105 group-hover:scale-100 z-0"
         />
-      ))}
-    </div>
+      )}
+    </>
   );
 };
 
@@ -52,73 +53,66 @@ const ProductCard = memo(({ product, onAddToCart, priority, isWishlisted, onTogg
   const [isAdded, setIsAdded] = useState(false);
   
   return (
-    <div className="group relative flex flex-col h-full bg-transparent bg-[url('/chocolate-border-new2.jpg')] bg-[length:100%_100%] bg-no-repeat transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 rounded-xl">
-      {/* Inner wrapper to keep content inside the organic cream area of the image */}
-      <div className="relative flex flex-col flex-1 pt-[12%] px-[8%] pb-[20%] bg-transparent">
-        
-        {/* Badges */}
-        <div className="absolute top-2 left-2 z-20 flex flex-col gap-2">
-          {product.stockCount <= 5 && product.stockCount > 0 && (
-            <span className="bg-[#724D26] text-white text-[9px] uppercase tracking-wider px-2 py-1 shadow-sm rounded-sm">Low Stock</span>
-          )}
-          {(product.cutoffPrice ?? 0) > product.price && (
-            <span className="bg-[#106636] text-white text-[9px] uppercase tracking-wider px-2 py-1 shadow-sm rounded-sm">Sale</span>
-          )}
-        </div>
+    <div className="group relative flex flex-col h-full bg-white transition-all duration-300 shadow-sm border border-zinc-200 hover:shadow-xl hover:-translate-y-1 rounded-2xl overflow-hidden">
+      
+      {/* Badges */}
+      <div className="absolute top-3 left-3 z-20 flex flex-col gap-2">
+        {product.stockCount <= 5 && product.stockCount > 0 && (
+          <span className="bg-[#724D26] text-white text-[9px] uppercase tracking-wider px-2 py-1 shadow-sm rounded-sm">Low Stock</span>
+        )}
+        {(product.cutoffPrice ?? 0) > product.price && (
+          <span className="bg-[#106636] text-white text-[9px] uppercase tracking-wider px-2 py-1 shadow-sm rounded-sm">Sale</span>
+        )}
+      </div>
 
-        {/* Wishlist Icon */}
-        <button 
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onToggleWishlist(product);
-          }}
-          className={`absolute top-2 right-2 z-20 transition-colors bg-white/90 p-1.5 rounded-full shadow-md opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:translate-y-2 lg:group-hover:translate-y-0 duration-300 ${isWishlisted ? 'text-red-500' : 'text-zinc-400 hover:text-red-500'}`}
-        >
-          <svg className="w-4 h-4" fill={isWishlisted ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
-        </button>
+      {/* Wishlist Icon */}
+      <button 
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggleWishlist(product);
+        }}
+        className={`absolute top-3 right-3 z-20 transition-colors bg-white/90 p-1.5 rounded-full shadow-sm opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:translate-y-2 lg:group-hover:translate-y-0 duration-300 ${isWishlisted ? 'text-red-500' : 'text-zinc-400 hover:text-red-500'}`}
+      >
+        <svg className="w-4 h-4" fill={isWishlisted ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        </svg>
+      </button>
 
-        {/* Image Container */}
-        <div className="relative aspect-[4/5] w-full overflow-hidden bg-zinc-50 mb-4 rounded-3xl shadow-sm border border-zinc-200/40">
-          <Link href={`/shop/${product.id}`} className="relative block w-full h-full">
-            {product.name.toLowerCase().includes('raksha bandhan') ? (
-              <RakshaSlideshow images={['/images/themes/raksha-bandhan/closed.jpg', '/images/themes/raksha-bandhan/open.jpg']} />
-            ) : product.name.toLowerCase().includes('birthday') ? (
-              <RakshaSlideshow images={['/images/themes/birthday/closed.jpg', '/images/themes/birthday/open.jpg']} />
-            ) : product.name.toLowerCase().includes('anniversary') ? (
-              <RakshaSlideshow images={['/images/themes/anniversary/closed.jpg', '/images/themes/anniversary/open.jpg']} />
-            ) : product.name.toLowerCase().includes('diwali') ? (
-              <RakshaSlideshow images={['/images/themes/diwali/closed.jpg', '/images/themes/diwali/open.jpg']} />
-            ) : (
-              <>
-                {/* Primary Image */}
-                <Image
-                  src={product.image1}
-                  alt={product.name}
-                  fill
-                  priority={priority}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover transition-opacity duration-500 z-10 group-hover:opacity-0"
-                />
-                {/* Hover Image (Fallback to image1 if image2 is missing) */}
-                <Image
-                  src={product.image2 || product.image1}
-                  alt={product.name + " hover"}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover transition-transform duration-700 scale-105 group-hover:scale-100 z-0"
-                />
-              </>
-            )}
-          </Link>
-        </div>
+      {/* Image Container */}
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#FAF9F6] border-b border-zinc-100">
+        <Link href={`/shop/${product.id}`} className="relative block w-full h-full">
+          <>
+            {/* Primary Image */}
+            <Image
+              src={product.image1}
+              alt={product.name}
+              fill
+              priority={priority}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover transition-opacity duration-500 z-10 group-hover:opacity-0"
+            />
+            {/* Hover Image (Fallback to image1 if image2 is missing) */}
+            <Image
+              src={product.image2 || product.image1}
+              alt={product.name + " hover"}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover transition-transform duration-700 scale-105 group-hover:scale-100 z-0"
+            />
+          </>
+        </Link>
+      </div>
 
-        {/* Details */}
-        <div className="px-4 pb-5 flex flex-col flex-1">
+      {/* Details */}
+      <div className="p-4 sm:p-5 flex flex-col flex-1">
           <div className="flex justify-between items-start mb-1">
-            <span className="text-[10px] font-semibold text-[#8A6F54] uppercase tracking-widest">{product.category}</span>
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-semibold text-[#8A6F54] uppercase tracking-widest">{product.category}</span>
+              {(product.category.toLowerCase().includes("gift box") || product.name.toLowerCase().includes("special box")) && (
+                <span className="text-[9px] text-zinc-500 font-medium">Available in 6 & 12 Bars</span>
+              )}
+            </div>
             <div className="flex text-yellow-500 text-[10px]">
               ★ 4.8
             </div>
@@ -167,7 +161,6 @@ const ProductCard = memo(({ product, onAddToCart, priority, isWishlisted, onTogg
             </button>
           </div>
         </div>
-      </div>
     </div>
   );
 });
@@ -350,11 +343,19 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
   return (
     <div className="flex-1 bg-[#FAF9F6] text-zinc-900 font-sans min-h-screen pb-24 relative">
       {/* Header Banner */}
-      <header className="relative py-12 bg-zinc-900 text-white text-center">
-        <div className="max-w-4xl mx-auto px-4">
-          <span className="text-[#F5E6C4] text-xs uppercase tracking-widest block mb-2">Shop</span>
-          <h1 className="text-3xl sm:text-4xl font-light tracking-tight">Our Chocolates</h1>
-          <p className="text-xs text-zinc-400 mt-2">Browse and buy our selection.</p>
+      <header className="relative h-[40vh] md:h-[50vh] bg-zinc-900 text-white flex items-center justify-center overflow-hidden">
+        <Image
+          src="/shop_hero.png"
+          alt="Shop Hero"
+          fill
+          className="object-cover opacity-80 brightness-75"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto mt-8">
+          <span className="text-[#F5E6C4] text-xs md:text-sm uppercase tracking-[0.2em] block mb-4 drop-shadow-md">The Atelier</span>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-wide mb-4 drop-shadow-lg">Pure Indulgence</h1>
+          <p className="text-sm md:text-base text-zinc-200 font-serif italic drop-shadow-md">Experience the rich harmony of handcrafted chocolate and signature Kunafa.</p>
         </div>
       </header>
 

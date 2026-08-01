@@ -30,6 +30,7 @@ type Product = {
   image3?: string;
   image4?: string;
   dietary?: string;
+  displayOrder: number;
 };
 
 let _cache: Product[] | null = null;
@@ -53,7 +54,10 @@ function pickImage(name: string, category: string, index: number): string {
 
 async function fetchFromDb(): Promise<Product[]> {
   const rows = await prisma.product.findMany({
-    orderBy: { createdAt: "desc" },
+    orderBy: [
+      { displayOrder: "asc" },
+      { createdAt: "desc" }
+    ],
   });
 
   return rows.map((row) => ({
@@ -70,6 +74,7 @@ async function fetchFromDb(): Promise<Product[]> {
     image3: row.image3,
     image4: row.image4,
     dietary: row.dietary,
+    displayOrder: row.displayOrder,
   }));
 }
 
