@@ -73,16 +73,19 @@ export default async function ProductDetailPage({
     });
   }
 
+  type ReviewRecord = { createdAt: Date; [key: string]: unknown };
+  type ProductRecord = { createdAt: Date; [key: string]: unknown };
+
   const serializedProduct = {
     ...product,
     createdAt: product.createdAt.toISOString(),
-    reviews: product.reviews.map(r => ({
+    reviews: product.reviews.map((r: ReviewRecord) => ({
       ...r,
       createdAt: r.createdAt.toISOString(),
     })),
   };
 
-  const serializedRelatedProducts = relatedProducts.map(rp => ({
+  const serializedRelatedProducts = relatedProducts.map((rp: ProductRecord) => ({
     ...rp,
     createdAt: rp.createdAt.toISOString(),
   }));
