@@ -39,8 +39,10 @@ export async function PATCH(request: Request) {
       subject = "Update on your Yemnest Order";
     }
 
+    type OrderItem = { id: string; houseNo: string; addressLine1: string; pincode: string; userEmail: string };
+
     if (subject) {
-      ordersToUpdate.forEach((order) => {
+      (ordersToUpdate as OrderItem[]).forEach((order: OrderItem) => {
         let messageBody = "";
         if (status === "SHIPPED") {
           messageBody = `Your Yemnest order <strong>#${order.id}</strong> has been shipped and is on its way to you.`;
