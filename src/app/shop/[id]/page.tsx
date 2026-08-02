@@ -73,7 +73,7 @@ export default async function ProductDetailPage({
     });
   }
 
-  type ReviewRecord = { createdAt: Date; [key: string]: unknown };
+  type ReviewRecord = { id: string; rating: number; comment: string; userName: string; createdAt: Date };
   type ProductRecord = { createdAt: Date; [key: string]: unknown };
 
   const serializedProduct = {
