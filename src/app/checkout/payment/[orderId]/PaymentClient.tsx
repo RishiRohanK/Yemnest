@@ -16,11 +16,11 @@ export default function PaymentClient({ order }: { order: any }) {
   const merchantName = "Yemnest Chocolates";
   const amountStr = order.totalPrice.toFixed(2);
   
-  // UPI Deep link
+  // UPI Deep link (still used for mobile clicking)
   const upiLink = `upi://pay?pa=${merchantUpiId}&pn=${encodeURIComponent(merchantName)}&am=${amountStr}&cu=INR`;
   
-  // Mock QR generation URL (using an open API for demo purposes)
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiLink)}`;
+  // Use the statically uploaded QR code for now
+  const qrUrl = "/images/QR.jpeg";
 
   const handleCopy = () => {
     navigator.clipboard.writeText(merchantUpiId);
