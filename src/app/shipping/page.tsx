@@ -7,17 +7,17 @@ export default function ShippingPage() {
           <p>Thank you for shopping with Yemnest. This Shipping Policy outlines our standard processing and delivery terms.</p>
           
           <div>
-            <h2 className="text-xl text-zinc-900 mt-8 mb-4 font-light">Processing Time</h2>
+            <h2 className="text-xl text-[#724D26] mt-8 mb-4 font-medium">Processing Time</h2>
             <p>All orders are processed within 1 to 2 business days (excluding weekends and holidays) after receiving your order confirmation email. You will receive another notification when your order has shipped.</p>
           </div>
 
           <div>
-            <h2 className="text-xl text-zinc-900 mt-8 mb-4 font-light">Shipping Rates and Estimates</h2>
+            <h2 className="text-xl text-[#724D26] mt-8 mb-4 font-medium">Shipping Rates and Estimates</h2>
             <p>We offer flat-rate shipping for all domestic orders. Shipping charges for your order will be calculated and displayed at checkout.</p>
           </div>
 
           <div>
-            <h2 className="text-xl text-zinc-900 mt-8 mb-4 font-light">In-Store Pickup</h2>
+            <h2 className="text-xl text-[#724D26] mt-8 mb-4 font-medium">In-Store Pickup</h2>
             <p>You can skip the shipping fees with free local pickup at our store. After placing your order and selecting local pickup at checkout, your order will be prepared and ready for pick up within 1 business day.</p>
           </div>
         </div>

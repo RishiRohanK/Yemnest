@@ -7,17 +7,17 @@ export default function ContactPage() {
           <p>We'd love to hear from you! If you have any questions, concerns, or feedback, please reach out to us using the contact information below.</p>
           
           <div>
-            <h2 className="text-xl text-zinc-900 mt-8 mb-4 font-light">Email</h2>
+            <h2 className="text-xl text-[#724D26] mt-8 mb-4 font-medium">Email</h2>
             <p>You can email us anytime at: <strong>support@yemnest.com</strong></p>
           </div>
 
           <div>
-            <h2 className="text-xl text-zinc-900 mt-8 mb-4 font-light">WhatsApp</h2>
+            <h2 className="text-xl text-[#724D26] mt-8 mb-4 font-medium">WhatsApp</h2>
             <p>For immediate assistance, message us on WhatsApp at: <strong>+91 9876543210</strong></p>
           </div>
 
           <div>
-            <h2 className="text-xl text-zinc-900 mt-8 mb-4 font-light">Business Hours</h2>
+            <h2 className="text-xl text-[#724D26] mt-8 mb-4 font-medium">Business Hours</h2>
             <p>Monday - Friday: 9:00 AM - 6:00 PM</p>
             <p>Saturday - Sunday: Closed</p>
           </div>

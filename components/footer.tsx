@@ -11,19 +11,19 @@ export default function Footer() {
   if (pathname && pathname.startsWith("/admin")) return null;
 
   return (
-    <footer className="bg-zinc-950 text-zinc-300 pt-4 pb-2 border-t border-zinc-900 mt-auto">
+    <footer className="bg-zinc-950 text-zinc-300 pt-10 pb-8 border-t border-zinc-900 mt-auto">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
+        <div className="flex flex-col md:flex-row justify-between gap-8 mb-8">
 
           {/* Brand Section */}
-          <div className="space-y-2 max-w-xs">
+          <div className="space-y-4 max-w-xs">
             <Link href="/" className="inline-block">
               <Image
                 src="https://ik.imagekit.io/dypkhqxip/yemnestnavbar"
                 alt="Yemnest Logo"
-                width={120}
-                height={34}
-                className="h-8 w-auto object-contain brightness-0 invert opacity-90 hover:opacity-100 transition-opacity"
+                width={160}
+                height={45}
+                className="h-12 w-auto object-contain brightness-0 invert opacity-90 hover:opacity-100 transition-opacity"
               />
             </Link>
             <p className="text-sm text-zinc-400 leading-relaxed max-w-xs">
@@ -39,7 +39,7 @@ export default function Footer() {
               <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-white transition-colors">
                 <span className="sr-only">WhatsApp</span>
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path fillRule="evenodd" d="M12 2C6.48 2 2 6.48 2 12c0 2.17.69 4.18 1.87 5.84L2.3 21.7l3.96-1.52C7.82 21.37 9.85 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18.2c-1.8 0-3.5-.5-4.9-1.3l-.3-.2-2.7 1 1-2.6-.2-.4c-.9-1.4-1.4-3.1-1.4-4.8 0-4.5 3.7-8.2 8.2-8.2s8.2 3.7 8.2 8.2-3.7 8.2-8.2 8.2zm4.5-5.9c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1s-.6.8-.7.9c-.1.1-.3.2-.5.1-.2-.1-1-.4-2-1.2-.7-.6-1.2-1.4-1.3-1.6-.1-.2 0-.3.1-.4.1-.1.2-.2.3-.3s.1-.2.2-.4c.1-.2 0-.3 0-.4s-.5-1.3-.7-1.8c-.2-.5-.4-.4-.5-.4h-.4c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.1 0 1.2 1 2.4 1.1 2.6.1.2 1.8 2.7 4.2 3.8.6.3 1 .4 1.4.5.6.2 1.1.2 1.5.1.5-.1 1.4-.6 1.6-1.1.2-.5.2-1 .1-1.1-.2-.1-.4-.2-.6-.3z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M12 2C6.48 2 2 6.48 2 12c0 2.17.69 4.18 1.87 5.84L2.3 21.7l3.96-1.52C7.82 21.37 9.85 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18.2c-1.8 0-3.5-.5-4.9-1.3l-.3-.2-2.7 1 1-2.6-.2-.4c-.9-1.4-1.4-3.1-1.4-4.8 0-4.5 3.7-8.2 8.2-8.2s8.2 3.7 8.2 8.2-3.7 8.2-8.2 8.2zm4.5-5.9c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1s-.6.8-.7.9c-.1.1-.3.2-.5.1-.2-.1-1-.4-2-1.2-.7-.6-1.2-1.4-1.3-1.6-.1-.2 0-.3.1-.4.1-.1.2-.2.3-.3s.1-.2.2-.4c.1-.2 0-.3 0-.4s-.5-1.3-.7-1.8c-.2-.5-.4-.4-.5-.4h-.4c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.1 0 1.2 1 2.4 1.1 2.6.1.2 1.8 2.7 4.2 3.8.6.3 1 .4 1.4.5.6.2 1.1.2 1.5.1.5-.1 1.4-.6 1.6-1.1.2-.5.2-1 .1-1.1-.2-.5.2-1 .1-1.1-.2-.5.2-1 .1-1.1-.2-.1-.4-.2-.6-.3z" clipRule="evenodd" />
                 </svg>
               </a>
             </div>
@@ -47,8 +47,8 @@ export default function Footer() {
 
           {/* Customer Care */}
           <div className="flex flex-col md:items-end">
-            <h3 className="text-xs font-semibold text-white tracking-wider uppercase mb-2">Customer Care</h3>
-            <ul className="flex flex-wrap gap-x-4 gap-y-1 md:justify-end">
+            <h3 className="text-sm font-semibold text-white tracking-wider uppercase mb-4">Customer Care</h3>
+            <ul className="flex flex-wrap gap-x-6 gap-y-3 md:justify-end">
               <li>
                 <Link href="/contact" className="text-sm text-zinc-400 hover:text-white transition-colors">Contact Us</Link>
               </li>
@@ -59,10 +59,10 @@ export default function Footer() {
                 <Link href="/returns" className="text-sm text-zinc-400 hover:text-white transition-colors">Returns & Refunds</Link>
               </li>
               <li>
-                <Link href="/privacy" className="text-xs text-zinc-400 hover:text-white transition-colors">Privacy Policy</Link>
+                <Link href="/privacy" className="text-sm text-zinc-400 hover:text-white transition-colors">Privacy Policy</Link>
               </li>
               <li>
-                <Link href="/terms" className="text-xs text-zinc-400 hover:text-white transition-colors">Terms</Link>
+                <Link href="/terms" className="text-sm text-zinc-400 hover:text-white transition-colors">Terms</Link>
               </li>
             </ul>
           </div>
@@ -70,12 +70,12 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-2 border-t border-zinc-900 flex flex-col md:flex-row items-center justify-between gap-2">
-          <p className="text-[10px] text-zinc-500">
+        <div className="pt-6 border-t border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-zinc-500">
             &copy; {new Date().getFullYear()} Yemnest. All rights reserved.
           </p>
           <div className="flex items-center text-zinc-500">
-            <span className="text-[10px]">Designed, Developed & Managed by Forge Digital Technologies</span>
+            <span className="text-xs">Designed, Developed & Managed by Forge Digital Technologies</span>
           </div>
         </div>
       </div>
