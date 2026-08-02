@@ -11,7 +11,9 @@ export async function POST(req: Request) {
     }
 
     if (isAdminLogin) {
-      if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
+      const adminEmail = process.env.ADMIN_EMAIL || "admin@yemnest.com";
+      const adminPassword = process.env.ADMIN_PASSWORD || "adminpassword123";
+      if (email === adminEmail && password === adminPassword) {
         const sessionPayload = { role: "admin", email };
         await setSessionCookie(sessionPayload);
         return NextResponse.json({ success: true, role: "admin" });

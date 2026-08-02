@@ -5,8 +5,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { email, password } = body;
 
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const adminPassword = process.env.ADMIN_PASSWORD;
+    const adminEmail = process.env.ADMIN_EMAIL || "admin@yemnest.com";
+    const adminPassword = process.env.ADMIN_PASSWORD || "adminpassword123";
 
     if (!adminEmail || !adminPassword) {
       return NextResponse.json(

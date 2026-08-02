@@ -16,8 +16,8 @@ export async function POST(request: Request) {
     }
 
     // Check if this is the admin login
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const adminPassword = process.env.ADMIN_PASSWORD;
+    const adminEmail = process.env.ADMIN_EMAIL || "admin@yemnest.com";
+    const adminPassword = process.env.ADMIN_PASSWORD || "adminpassword123";
 
     if (adminEmail && adminPassword && email.trim() === adminEmail.trim() && password === adminPassword.trim()) {
       const { setSessionCookie } = await import("@/lib/auth");
