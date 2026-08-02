@@ -519,6 +519,24 @@ export default function AdminPage() {
     }
   };
 
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!window.confirm("Are you sure you want to delete this order? This action cannot be undone.")) return;
+    
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        toast.success("Order deleted successfully");
+        fetchDashboardData();
+      } else {
+        toast.error("Failed to delete order");
+      }
+    } catch (err) {
+      toast.error("An error occurred while deleting order");
+    }
+  };
+
   const handleBulkStatusUpdate = async (status: string) => {
     if (selectedOrders.length === 0) return;
 
@@ -531,24 +549,28 @@ export default function AdminPage() {
       return;
     }
 
-    if (!window.confirm(`Update ${selectedOrders.length} orders to ${status}?`)) return;
+    const confirmMessage = status === "DELETE" 
+      ? `Are you sure you want to delete ${selectedOrders.length} orders? This cannot be undone.`
+      : `Update ${selectedOrders.length} orders to ${status}?`;
+
+    if (!window.confirm(confirmMessage)) return;
 
     setIsUpdatingBulk(true);
     try {
       const res = await fetch(`/api/admin/orders/bulk`, {
-        method: "PATCH",
+        method: status === "DELETE" ? "DELETE" : "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderIds: selectedOrders, status }),
       });
       if (res.ok) {
-        toast.success(`Successfully updated ${selectedOrders.length} orders`);
+        toast.success(status === "DELETE" ? `Successfully deleted ${selectedOrders.length} orders` : `Successfully updated ${selectedOrders.length} orders`);
         setSelectedOrders([]);
         fetchDashboardData();
       } else {
-        toast.error("Failed to update orders");
+        toast.error(`Failed to ${status === "DELETE" ? "delete" : "update"} orders`);
       }
     } catch (err) {
-      toast.error("An error occurred while updating status");
+      toast.error(`An error occurred while ${status === "DELETE" ? "deleting" : "updating"}`);
     } finally {
       setIsUpdatingBulk(false);
     }
@@ -1302,6 +1324,7 @@ export default function AdminPage() {
                     <option value="SHIPPED">Mark as Shipped</option>
                     <option value="DELIVERED">Mark as Delivered</option>
                     <option value="CANCELLED">Mark as Cancelled</option>
+                    <option value="DELETE">Delete Selected</option>
                   </select>
                 </div>
               )}
@@ -1410,6 +1433,15 @@ export default function AdminPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                               </svg>
                               Print Slip
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteOrder(order.id)}
+                              className="w-full flex items-center justify-center gap-1.5 px-2 py-1 bg-red-50 border border-red-200 hover:bg-red-100 text-red-600 uppercase tracking-widest transition-colors text-[9px]"
+                            >
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              Delete
                             </button>
                           </td>
                         </tr>

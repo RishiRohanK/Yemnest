@@ -85,3 +85,31 @@ export async function PATCH(request: Request) {
     );
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const { orderIds } = await request.json();
+
+    if (!orderIds || !Array.isArray(orderIds)) {
+      return NextResponse.json(
+        { error: "orderIds array is required." },
+        { status: 400 }
+      );
+    }
+
+    await prisma.order.deleteMany({
+      where: { id: { in: orderIds } },
+    });
+
+    return NextResponse.json(
+      { message: `Successfully deleted ${orderIds.length} orders` },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error("Bulk delete order error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete orders." },
+      { status: 500 }
+    );
+  }
+}
