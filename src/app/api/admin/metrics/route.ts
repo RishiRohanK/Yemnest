@@ -30,10 +30,12 @@ export async function GET(request: Request) {
       },
     });
 
+    type OrderRecord = { createdAt: Date; totalPrice: number };
+
     // Calculate metrics
     const totalUsers = users.length;
     const totalOrders = orders.length;
-    const totalRevenue = orders.reduce((sum: number, order: { totalPrice: number }) => sum + order.totalPrice, 0);
+    const totalRevenue = (orders as OrderRecord[]).reduce((sum: number, order: OrderRecord) => sum + order.totalPrice, 0);
 
     // Calculate daily sales for chart
     const last7Days = [...Array(7)].map((_, i) => {
@@ -42,13 +44,13 @@ export async function GET(request: Request) {
       return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }).reverse();
 
-    const salesData = last7Days.map(dateLabel => {
-      const dailyOrders = orders.filter((o: { createdAt: Date | string; totalPrice: number }) =>
+    const salesData = last7Days.map((dateLabel: string) => {
+      const dailyOrders = (orders as OrderRecord[]).filter((o: OrderRecord) =>
         new Date(o.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) === dateLabel
       );
       return {
         name: dateLabel,
-        revenue: dailyOrders.reduce((sum: number, o: { totalPrice: number }) => sum + o.totalPrice, 0)
+        revenue: dailyOrders.reduce((sum: number, o: OrderRecord) => sum + o.totalPrice, 0)
       };
     });
 
