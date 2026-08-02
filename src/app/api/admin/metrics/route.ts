@@ -43,7 +43,7 @@ export async function GET(request: Request) {
     }).reverse();
 
     const salesData = last7Days.map(dateLabel => {
-      const dailyOrders = orders.filter(o => 
+      const dailyOrders = orders.filter((o: { createdAt: Date | string; totalPrice: number }) =>
         new Date(o.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) === dateLabel
       );
       return {
