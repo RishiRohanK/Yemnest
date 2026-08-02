@@ -19,7 +19,7 @@ export async function PATCH(
       );
     }
 
-    const updateData: any = { status };
+    const updateData: { status: string; deliveredAt?: Date } = { status };
     if (status === "DELIVERED") {
       updateData.deliveredAt = new Date();
     }

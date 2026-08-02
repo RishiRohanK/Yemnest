@@ -65,8 +65,9 @@ export async function GET(request: Request) {
       select: { category: true, stockCount: true }
     });
     
+    type ProductRecord = { category: string; stockCount: number };
     const inventoryMap: Record<string, { name: string; value: number }> = {};
-    allProducts.forEach(p => {
+    (allProducts as ProductRecord[]).forEach((p: ProductRecord) => {
       if (!inventoryMap[p.category]) {
         inventoryMap[p.category] = { name: p.category, value: 0 };
       }
