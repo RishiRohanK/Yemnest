@@ -315,16 +315,7 @@ export default function ProductDetailClient({
       return false;
     }
 
-    if (isPersonalized) {
-      if (!personalizePhoto) {
-        toast.error("Please upload a photo for your box");
-        return false;
-      }
-      if (!personalizeName.trim()) {
-        toast.error("Please enter a name for your box");
-        return false;
-      }
-    }
+
 
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("yemnest_cart_items");
@@ -719,8 +710,8 @@ export default function ProductDetailClient({
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-[#d32f2f] mb-3">
-                    Upload Photo for Box & Chocolates *
+                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-3">
+                    Upload Photo for Box & Chocolates (Optional)
                   </label>
                   <div 
                     onClick={() => fileInputRef.current?.click()}
@@ -744,8 +735,8 @@ export default function ProductDetailClient({
                 </div>
                 {isBulkOrder && (
                   <div className="mb-6">
-                    <label className="block text-xs uppercase tracking-widest text-[#d32f2f] mb-2">
-                      Custom Heading (e.g. Happy Birthday) *
+                    <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-2">
+                      Custom Heading (e.g. Happy Birthday) (Optional)
                     </label>
                     <input 
                       type="text" 
@@ -758,8 +749,8 @@ export default function ProductDetailClient({
                 )}
 
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-[#d32f2f] mb-2">
-                    Name to be printed on the Box (15 Char Max) *
+                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-2">
+                    Name to be printed on the Box (15 Char Max) (Optional)
                   </label>
                   <div className="relative">
                     <input 
