@@ -139,6 +139,14 @@ export default function OrdersClient() {
                           <div className="flex-1">
                             <h5 className="font-medium text-zinc-900 text-sm mb-1">{item.name}</h5>
                             <p className="text-xs text-zinc-500">Qty: {item.quantity}</p>
+                            {item.isCustomized && item.customDetails && (
+                              <div className="mt-1 space-y-0.5">
+                                {item.customDetails.size && <p className="text-[10px] text-[#724D26] uppercase tracking-widest mt-0.5">Size: {item.customDetails.size} Box</p>}
+                                {item.customDetails.giftWrapping && <p className="text-[10px] text-[#724D26] uppercase tracking-widest mt-0.5">Gift Wrapped (+₹49)</p>}
+                                {item.customDetails.name && <p className="text-[10px] text-zinc-500">Name: {item.customDetails.name}</p>}
+                                {item.customDetails.message && <p className="text-[10px] text-zinc-500 truncate max-w-[150px]">Msg: {item.customDetails.message}</p>}
+                              </div>
+                            )}
                           </div>
                           <div className="text-right">
                             <span className="text-sm font-semibold text-[#106636]">₹{(item.price * item.quantity).toFixed(2)}</span>

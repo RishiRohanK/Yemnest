@@ -130,7 +130,9 @@ export default function CheckoutClient() {
             price: i.product.price,
             quantity: i.quantity,
             theme: i.theme,
-            customFestival: i.customFestival
+            customFestival: i.customFestival,
+            isCustomized: i.isCustomized,
+            customDetails: i.customDetails
           })),
           subTotal,
           tax,
@@ -236,6 +238,14 @@ export default function CheckoutClient() {
                         <p className="text-[10px] text-[#724D26] uppercase tracking-widest mt-0.5">
                           Theme: {item.theme === 'Customized Festival' ? item.customFestival : item.theme}
                         </p>
+                      )}
+                      {item.isCustomized && item.customDetails && (
+                        <div className="mt-1 space-y-0.5">
+                          {item.customDetails.size && <p className="text-[10px] text-[#724D26] uppercase tracking-widest mt-0.5">Size: {item.customDetails.size} Box</p>}
+                          {item.customDetails.giftWrapping && <p className="text-[10px] text-[#724D26] uppercase tracking-widest mt-0.5">Gift Wrapped (+₹49)</p>}
+                          {item.customDetails.name && <p className="text-[10px] text-zinc-500">Name: {item.customDetails.name}</p>}
+                          {item.customDetails.message && <p className="text-[10px] text-zinc-500 truncate max-w-[150px]">Msg: {item.customDetails.message}</p>}
+                        </div>
                       )}
                       <p className="text-xs text-zinc-500 mt-0.5">Qty: {item.quantity}</p>
                     </div>

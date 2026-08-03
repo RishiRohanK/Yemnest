@@ -145,7 +145,10 @@ export default function ProductDetailClient({
 
   const [activeImage, setActiveImage] = useState(themeImages[0]);
   const [isSlideshowPaused, setIsSlideshowPaused] = useState(false);
-  const [quantity, setQuantity] = useState(1);
+  
+  const isBulkOrder = product.category?.includes("Bulk Orders");
+  const [quantity, setQuantity] = useState(isBulkOrder ? 100 : 1);
+  
   const [cartToast, setCartToast] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [activeTab, setActiveTab] = useState("description");
@@ -161,12 +164,60 @@ export default function ProductDetailClient({
   const [reviewSuccess, setReviewSuccess] = useState(false);
 
   const isCustomizableBox = product.name.includes("6 Chocolate Gift Box") || product.name.includes("12 Chocolate Gift Box");
-  const isGiftBox = product.category.toLowerCase().includes("gift box") || product.name.toLowerCase().includes("special box") || product.category.toLowerCase().includes("festive");
+  const isGiftBox = product.category?.toLowerCase().includes("gift box") || product.name.toLowerCase().includes("special box") || product.category?.toLowerCase().includes("festive");
   
   const [selectedTheme, setSelectedTheme] = useState<string>("");
   const [customFestival, setCustomFestival] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<"6" | "12">("6");
   const [selectedFlavour, setSelectedFlavour] = useState<"Plain" | "Nuts" | "Kunafa">("Plain");
+
+  // Personalization logic
+  const isPersonalized = product.category?.includes("Personalised Chocolates") || product.category?.includes("Customization") || product.variations?.isCustomizable === true || product.category?.includes("Bulk Orders");
+  const [personalizeHeading, setPersonalizeHeading] = useState("");
+  const [giftWrapping, setGiftWrapping] = useState<boolean>(false);
+  const [personalizePhoto, setPersonalizePhoto] = useState<string | null>(null);
+  const [personalizeName, setPersonalizeName] = useState("");
+  const [personalizeMessage, setPersonalizeMessage] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 400;
+        const MAX_HEIGHT = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7);
+        setPersonalizePhoto(compressedDataUrl);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     const syncWishlist = () => {
@@ -264,9 +315,20 @@ export default function ProductDetailClient({
       return false;
     }
 
+    if (isPersonalized) {
+      if (!personalizePhoto) {
+        toast.error("Please upload a photo for your box");
+        return false;
+      }
+      if (!personalizeName.trim()) {
+        toast.error("Please enter a name for your box");
+        return false;
+      }
+    }
+
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("yemnest_cart_items");
-      let items: { product: Product; quantity: number }[] = [];
+      let items: any[] = [];
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
@@ -282,7 +344,11 @@ export default function ProductDetailClient({
       const flavourTag = isGiftBox ? selectedFlavour : undefined;
       
       let finalPrice = product.price;
-      if (isGiftBox) {
+      if (isBulkOrder && product.variations?.bulkPrice) {
+        finalPrice = Number(product.variations.bulkPrice);
+      } else if (isPersonalized) {
+        if (giftWrapping) finalPrice += 49;
+      } else if (isGiftBox) {
         if (product.variations && product.variations[selectedSize] && product.variations[selectedSize][selectedFlavour]?.price) {
           finalPrice = product.variations[selectedSize][selectedFlavour].price;
         } else if (selectedSize === "12") {
@@ -290,7 +356,7 @@ export default function ProductDetailClient({
         }
       }
 
-      const finalName = isGiftBox ? `${product.name} (${selectedSize} Size - ${selectedFlavour})` : product.name;
+      const finalName = isBulkOrder ? `${product.name} (Bulk)` : (isPersonalized ? `${product.name}` : (isGiftBox ? `${product.name} (${selectedSize} Size - ${selectedFlavour})` : product.name));
       const productToAdd = { ...product, price: finalPrice, name: finalName };
 
       const existingIndex = items.findIndex((item: any) => 
@@ -298,10 +364,13 @@ export default function ProductDetailClient({
         item.theme === selectedTheme && 
         item.customFestival === customFestival &&
         item.size === sizeTag &&
-        item.flavour === flavourTag
+        item.flavour === flavourTag &&
+        item.customDetails?.name === personalizeName &&
+        item.customDetails?.message === personalizeMessage &&
+        item.customDetails?.giftWrapping === giftWrapping
       );
       
-      if (existingIndex > -1) {
+      if (existingIndex > -1 && !isPersonalized) {
         if (items[existingIndex].quantity + quantity > product.stockCount) {
           toast.error(`You cannot add more. Only ${product.stockCount} in stock!`);
           return;
@@ -312,7 +381,23 @@ export default function ProductDetailClient({
           toast.error(`You cannot add more. Only ${product.stockCount} in stock!`);
           return;
         }
-        items.push({ product: productToAdd, quantity, theme: selectedTheme, customFestival: customFestival, size: sizeTag, flavour: flavourTag } as any);
+        items.push({ 
+          product: productToAdd, 
+          quantity, 
+          theme: selectedTheme, 
+          customFestival: customFestival, 
+          size: sizeTag, 
+          flavour: flavourTag,
+          isCustomized: isPersonalized,
+          customDetails: isPersonalized ? {
+            template: "Standard",
+            photo: personalizePhoto,
+            heading: personalizeHeading,
+            name: personalizeName,
+            message: personalizeMessage,
+            giftWrapping
+          } : undefined
+        } as any);
       }
 
       const lightweightItems = items.map(item => ({
@@ -511,6 +596,14 @@ export default function ProductDetailClient({
             <div className="flex items-end gap-4 mb-8">
               <span className="text-3xl font-normal text-[#106636]">
                 ₹{(() => {
+                  if (isBulkOrder && product.variations?.bulkPrice) {
+                    return Number(product.variations.bulkPrice).toFixed(2);
+                  }
+                  if (isPersonalized) {
+                    let p = product.price;
+                    if (giftWrapping) p += 49;
+                    return p.toFixed(2);
+                  }
                   if (isGiftBox) {
                     if (product.variations && product.variations[selectedSize] && product.variations[selectedSize][selectedFlavour]?.price) {
                       return product.variations[selectedSize][selectedFlavour].price.toFixed(2);
@@ -519,6 +612,7 @@ export default function ProductDetailClient({
                   }
                   return product.price.toFixed(2);
                 })()}
+                {isBulkOrder && <span className="text-sm text-zinc-500 font-light ml-2 tracking-normal">/ piece</span>}
               </span>
               <span className="text-lg text-zinc-400 line-through mb-1">
                 {(() => {
@@ -602,6 +696,101 @@ export default function ProductDetailClient({
               </div>
             )}
 
+            {isPersonalized && (
+              <div className="bg-[#FEFEFD] p-6 border border-zinc-200 shadow-sm mb-6 space-y-6">
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-3">
+                    Gift Wrapping
+                  </label>
+                  <div className="flex flex-wrap gap-4">
+                    {[
+                      { label: "No", value: false }, 
+                      { label: "Yes (+ Rs. 49)", value: true }
+                    ].map((opt) => (
+                      <button 
+                        key={opt.label}
+                        onClick={() => setGiftWrapping(opt.value)}
+                        className={`flex-1 min-w-[80px] py-3 text-sm font-medium border transition-colors ${giftWrapping === opt.value ? "border-[#106636] bg-[#106636]/5 text-[#106636]" : "border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-[#d32f2f] mb-3">
+                    Upload Photo for Box & Chocolates *
+                  </label>
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-zinc-300 rounded-md p-8 flex flex-col items-center justify-center cursor-pointer hover:border-[#106636] transition-colors bg-zinc-50/50"
+                  >
+                    {personalizePhoto ? (
+                      <div className="relative w-32 h-32">
+                        <Image src={personalizePhoto} alt="Uploaded photo" fill className="object-cover rounded-md" />
+                      </div>
+                    ) : (
+                      <div className="bg-zinc-200 px-4 py-2 text-xs text-zinc-700 rounded-md font-medium">Add files</div>
+                    )}
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      ref={fileInputRef}
+                      className="hidden"
+                      onChange={handlePhotoUpload}
+                    />
+                  </div>
+                </div>
+                {isBulkOrder && (
+                  <div className="mb-6">
+                    <label className="block text-xs uppercase tracking-widest text-[#d32f2f] mb-2">
+                      Custom Heading (e.g. Happy Birthday) *
+                    </label>
+                    <input 
+                      type="text" 
+                      value={personalizeHeading}
+                      onChange={(e) => setPersonalizeHeading(e.target.value)}
+                      className="w-full px-3 py-3 border border-zinc-200 text-sm focus:outline-none focus:border-[#106636] bg-white"
+                      placeholder="Enter heading..."
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-[#d32f2f] mb-2">
+                    Name to be printed on the Box (15 Char Max) *
+                  </label>
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      maxLength={15}
+                      value={personalizeName}
+                      onChange={(e) => setPersonalizeName(e.target.value)}
+                      className="w-full px-3 py-3 border border-zinc-200 text-sm focus:outline-none focus:border-[#106636] bg-white"
+                    />
+                    <span className="absolute right-3 top-3 text-xs text-zinc-400">{personalizeName.length}/15</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-2">
+                    Message for the Recipient (250 Char Max)
+                  </label>
+                  <div className="relative">
+                    <textarea 
+                      maxLength={250}
+                      rows={4}
+                      value={personalizeMessage}
+                      onChange={(e) => setPersonalizeMessage(e.target.value)}
+                      className="w-full px-3 py-3 border border-zinc-200 text-sm focus:outline-none focus:border-[#106636] bg-white resize-none"
+                    />
+                    <span className="absolute right-3 bottom-3 text-xs text-zinc-400">{personalizeMessage.length}/250</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Customization Options for Gift Boxes */}
             {isCustomizableBox && (
               <div className="bg-[#FEFEFD] p-6 border border-zinc-200 shadow-sm mb-6">
@@ -653,7 +842,7 @@ export default function ProductDetailClient({
               
               <div className="flex gap-4">
                 <div className="flex items-center border border-zinc-300 bg-white">
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-4 py-3 text-zinc-500 hover:text-black transition-colors">-</button>
+                  <button onClick={() => setQuantity(Math.max(isBulkOrder ? 100 : 1, quantity - 1))} className="px-4 py-3 text-zinc-500 hover:text-black transition-colors">-</button>
                   <span className="w-10 text-center text-sm font-medium">{quantity}</span>
                   <button 
                     onClick={() => {

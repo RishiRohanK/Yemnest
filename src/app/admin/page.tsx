@@ -689,7 +689,12 @@ export default function AdminPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    const finalCategory = prodCategory === "Other" ? customCategory.trim() : prodCategory;
+    let finalCategory = prodCategory;
+    if (prodCategory.includes("Other")) {
+      const cats = prodCategory.split(',').map(c => c.trim()).filter(c => c && c !== "Other");
+      if (customCategory.trim()) cats.push(customCategory.trim());
+      finalCategory = cats.join(', ');
+    }
 
     if (
       !prodName ||
@@ -841,7 +846,8 @@ export default function AdminPage() {
     "Nutella Filling Kunafa Bars",
     "Gift Boxes",
     "Atelier Specialties",
-    ...products.map(p => p.category)
+    "Bulk Orders",
+    ...products.flatMap(p => p.category ? p.category.split(',').map(c => c.trim()).filter(c => c && !c.toLowerCase().includes("customization") && !c.toLowerCase().includes("personalised")) : [])
   ]));
 
   // Render Loading State while checking auth
@@ -894,11 +900,35 @@ export default function AdminPage() {
       const parsed = JSON.parse(itemsStr);
       if (Array.isArray(parsed)) {
         return parsed.map((item: any, i) => (
-          <div key={item.id || i} className="text-xs text-zinc-600 mb-1">
-            <div className="font-medium">• {item.name} (Qty: {item.quantity}) - ₹{item.price?.toFixed(2)}</div>
+          <div key={item.id || i} className="text-xs text-zinc-600 mb-4 p-2 border border-zinc-100 rounded bg-white">
+            <div className="font-medium text-zinc-900">
+              {item.name} (Qty: {item.quantity}) - ₹{item.price?.toFixed(2)}
+            </div>
+            
             {item.theme && (
-              <div className="text-[10px] text-[#724D26] uppercase tracking-widest pl-3 mt-0.5">
+              <div className="text-[10px] text-[#724D26] uppercase tracking-widest mt-1">
                 Theme: {item.theme === 'Customized Festival' ? item.customFestival : item.theme}
+              </div>
+            )}
+
+            {item.isCustomized && item.customDetails && (
+              <div className="mt-2 space-y-1 bg-zinc-50 p-2 rounded border border-zinc-100">
+                <div className="text-[10px] text-[#724D26] uppercase tracking-widest border-b border-zinc-200 pb-1 mb-1">
+                  Customization Details
+                </div>
+                {item.customDetails.size && <div className="text-xs text-zinc-700">Size: {item.customDetails.size} Box</div>}
+                {item.customDetails.giftWrapping && <div className="text-xs text-zinc-700">Gift Wrapped (+₹49)</div>}
+                {item.customDetails.name && <div className="text-xs text-zinc-700">Name on Box: {item.customDetails.name}</div>}
+                {item.customDetails.message && <div className="text-xs text-zinc-700">Message: {item.customDetails.message}</div>}
+                
+                {item.customDetails.photo && (
+                  <div className="mt-2">
+                    <span className="text-[10px] uppercase tracking-widest text-zinc-500 block mb-1">Uploaded Photo:</span>
+                    <a href={item.customDetails.photo} target="_blank" rel="noreferrer" className="block w-24 h-24 relative rounded overflow-hidden border border-zinc-200 cursor-zoom-in">
+                      <img src={item.customDetails.photo} alt="Customization" className="object-cover w-full h-full" />
+                    </a>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1583,60 +1613,71 @@ export default function AdminPage() {
 
               {/* Pricing & Stock & Category */}
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
-                    Price 6-Bite (₹)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={prodPrice}
-                    onChange={(e) => setProdPrice(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none"
-                    placeholder="499.00"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
-                    Cutoff 6-Bite (₹)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={prodCutoffPrice}
-                    onChange={(e) => setProdCutoffPrice(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none"
-                    placeholder="799.00"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
-                    Price 12-Bite (₹)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={prodPrice12Bar}
-                    onChange={(e) => setProdPrice12Bar(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none"
-                    placeholder="899.00"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
-                    Cutoff 12-Bite (₹)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={prodCutoffPrice12Bar}
-                    onChange={(e) => setProdCutoffPrice12Bar(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none"
-                    placeholder="999.00"
-                  />
-                </div>
+                {(() => {
+                  const show12Bite = prodCategory.toLowerCase().includes("gift box") || prodCategory.toLowerCase().includes("personalised");
+                  return (
+                    <>
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
+                          {show12Bite ? "Price 6-Bite (₹)" : "Price (₹)"}
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          required
+                          value={prodPrice}
+                          onChange={(e) => setProdPrice(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none"
+                          placeholder="499.00"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
+                          {show12Bite ? "Cutoff 6-Bite (₹)" : "Cutoff Price (₹)"}
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          required
+                          value={prodCutoffPrice}
+                          onChange={(e) => setProdCutoffPrice(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none"
+                          placeholder="799.00"
+                        />
+                      </div>
+                      {show12Bite && (
+                        <>
+                          <div>
+                            <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
+                              Price 12-Bite (₹)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={prodPrice12Bar}
+                              onChange={(e) => setProdPrice12Bar(e.target.value)}
+                              className="w-full px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none"
+                              placeholder="899.00"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
+                              Cutoff 12-Bite (₹)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={prodCutoffPrice12Bar}
+                              onChange={(e) => setProdCutoffPrice12Bar(e.target.value)}
+                              className="w-full px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none"
+                              placeholder="999.00"
+                            />
+                          </div>
+                        </>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                 <div>
@@ -1653,31 +1694,94 @@ export default function AdminPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
-                    Category
+                  <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-2">
+                    Categories (Select multiple)
                   </label>
-                  <select
-                    value={prodCategory}
-                    onChange={(e) => setProdCategory(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none cursor-pointer"
-                  >
-                    {allCategories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                    <option value="Other">Other</option>
-                  </select>
-                  {prodCategory === "Other" && (
+                  <div className="grid grid-cols-2 gap-2 p-3 bg-[#FAF9F6] border border-zinc-200">
+                    {allCategories.map(cat => {
+                      const currentCats = prodCategory ? prodCategory.split(',').map(c => c.trim()).filter(Boolean) : [];
+                      const isChecked = currentCats.includes(cat);
+                      return (
+                        <label key={cat} className="flex items-center text-xs text-zinc-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="mr-2"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              let newCats = [...currentCats];
+                              if (e.target.checked) {
+                                newCats.push(cat);
+                              } else {
+                                newCats = newCats.filter(c => c !== cat);
+                              }
+                              setProdCategory(newCats.join(', '));
+                            }}
+                          />
+                          {cat}
+                        </label>
+                      );
+                    })}
+                    <label className="flex items-center text-xs text-zinc-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="mr-2"
+                        checked={prodCategory.includes("Other")}
+                        onChange={(e) => {
+                          const currentCats = prodCategory ? prodCategory.split(',').map(c => c.trim()).filter(Boolean) : [];
+                          let newCats = [...currentCats];
+                          if (e.target.checked) {
+                            newCats.push("Other");
+                          } else {
+                            newCats = newCats.filter(c => c !== "Other");
+                          }
+                          setProdCategory(newCats.join(', '));
+                        }}
+                      />
+                      Other
+                    </label>
+                  </div>
+                  {prodCategory.includes("Other") && (
                     <input
                       type="text"
                       required
                       value={customCategory}
                       onChange={(e) => setCustomCategory(e.target.value)}
                       className="w-full mt-2 px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none"
-                      placeholder="Type custom category name..."
+                      placeholder="Type custom category names (comma-separated)..."
                     />
                   )}
                 </div>
               </div>
+
+              <div className="mt-4 mb-4 flex items-center">
+                <input
+                  type="checkbox"
+                  id="isCustomizable"
+                  checked={prodVariations?.isCustomizable || false}
+                  onChange={(e) => setProdVariations({ ...prodVariations, isCustomizable: e.target.checked })}
+                  className="mr-2 cursor-pointer"
+                />
+                <label htmlFor="isCustomizable" className="text-xs uppercase tracking-wider font-medium text-[#724D26] cursor-pointer">
+                  Enable Customization (Allows photo upload, name, and message on Product Page)
+                </label>
+              </div>
+
+              {prodCategory.includes("Bulk Orders") && (
+                <div className="mb-4">
+                  <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
+                    Bulk Price Per Piece (₹)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={prodVariations?.bulkPrice || ""}
+                    onChange={(e) => setProdVariations({ ...prodVariations, bulkPrice: e.target.value })}
+                    className="w-full px-3 py-2 bg-[#FAF9F6] border border-zinc-200 focus:outline-none focus:border-[#106636] text-xs rounded-none"
+                    placeholder="e.g. 20"
+                  />
+                  <p className="text-[10px] text-zinc-400 mt-1">Special price used when ordering in bulk (minimum 100).</p>
+                </div>
+              )}
 
               {/* Festive Variations Pricing */}
               {(prodCategory.toLowerCase().includes("gift box") || prodName.toLowerCase().includes("special box") || prodCategory.toLowerCase().includes("festive")) && (

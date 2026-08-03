@@ -18,6 +18,7 @@ export default function Home() {
       {/* Categories Bento Grid Section showing the three Kunafa Chocolates */}
       <Collections />
 
+
       {/* About Section */}
       <section className="w-full max-w-7xl mx-auto px-4 py-20 sm:px-6 lg:px-8 border-t border-zinc-200/40 rounded-none overflow-hidden">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 md:gap-8 items-center rounded-none">

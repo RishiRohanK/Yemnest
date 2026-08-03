@@ -24,7 +24,7 @@ interface Product {
   dietary?: string;
 }
 
-const CATEGORIES = ["All", "Kunafa Bites", "Gift Boxes", "Atelier Specialties"];
+const CATEGORIES = ["All", "Kunafa Bites", "Gift Boxes", "Bulk Orders", "Atelier Specialties"];
 
 const RakshaSlideshow = ({ images }: { images: string[] }) => {
   return (
@@ -331,7 +331,8 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
-      const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
+      const productCategories = product.category ? product.category.split(',').map(c => c.trim()) : [];
+      const matchesCategory = selectedCategory === "All" || productCategories.includes(selectedCategory);
       const matchesSearch =
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -369,17 +370,57 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
               <p className="text-xs text-zinc-400 mt-1">Please create a product in the Admin Panel to display it here.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-              {filteredProducts.map((product, index) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onAddToCart={handleAddToCart}
-                  priority={index < 3}
-                  isWishlisted={wishlist.some(w => w.id === product.id)}
-                  onToggleWishlist={toggleWishlist}
-                />
-              ))}
+            <div className="space-y-16">
+              {(() => {
+                // Group products by category
+                const grouped = filteredProducts.reduce((acc, product) => {
+                  let cats = product.category ? product.category.split(',').map(c => c.trim()) : ["Other"];
+                  // Remove unwanted categories from sections
+                  cats = cats.filter(c => c && !c.toLowerCase().includes("personalised chocolates") && !c.toLowerCase().includes("customization"));
+                  if (cats.length === 0) cats.push("Other");
+                  
+                  cats.forEach(cat => {
+                    if (!acc[cat]) {
+                      acc[cat] = [];
+                    }
+                    acc[cat].push(product);
+                  });
+                  return acc;
+                }, {} as Record<string, typeof filteredProducts>);
+
+                // Order categories: predefined first, then others
+                const orderedCategories = [
+                  ...CATEGORIES.filter(c => c !== "All"),
+                  ...Object.keys(grouped).filter(c => !CATEGORIES.includes(c))
+                ];
+
+                return orderedCategories.map((category) => {
+                  const products = grouped[category];
+                  if (!products || products.length === 0) return null;
+
+                  return (
+                    <div key={category}>
+                      {(selectedCategory === "All" || Object.keys(grouped).length > 1) && (
+                        <h2 className="text-lg sm:text-xl font-medium text-zinc-800 tracking-wide mb-6 border-b border-zinc-200 pb-2">
+                          {category}
+                        </h2>
+                      )}
+                      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+                        {products.map((product, index) => (
+                          <ProductCard
+                            key={product.id}
+                            product={product}
+                            onAddToCart={handleAddToCart}
+                            priority={index < 3}
+                            isWishlisted={wishlist.some(w => w.id === product.id)}
+                            onToggleWishlist={toggleWishlist}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           )}
         </div>

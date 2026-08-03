@@ -32,6 +32,8 @@ interface CartItem {
   quantity: number;
   theme?: string;
   customFestival?: string;
+  isCustomized?: boolean;
+  customDetails?: any;
 }
 
 export default function Navbar() {
@@ -840,6 +842,14 @@ export default function Navbar() {
                           <p className="text-[10px] text-[#724D26] uppercase tracking-widest mt-0.5">
                             Theme: {item.theme === 'Customized Festival' ? item.customFestival : item.theme}
                           </p>
+                        )}
+                        {item.isCustomized && item.customDetails && (
+                          <div className="mt-1 space-y-0.5">
+                            {item.customDetails.size && <p className="text-[10px] text-[#724D26] uppercase tracking-widest mt-0.5">Size: {item.customDetails.size} Box</p>}
+                            {item.customDetails.giftWrapping && <p className="text-[10px] text-[#724D26] uppercase tracking-widest mt-0.5">Gift Wrapped (+₹49)</p>}
+                            {item.customDetails.name && <p className="text-[10px] text-zinc-500">Name: {item.customDetails.name}</p>}
+                            {item.customDetails.message && <p className="text-[10px] text-zinc-500 truncate max-w-[150px]">Msg: {item.customDetails.message}</p>}
+                          </div>
                         )}
                         <p className="text-[10px] text-zinc-400 mb-1 mt-0.5">
                           Price: ₹{item.product.price.toFixed(2)}
