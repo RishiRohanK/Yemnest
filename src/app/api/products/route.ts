@@ -40,6 +40,7 @@ export async function POST(request: Request) {
       category,
       price12Bar,
       cutoffPrice12Bar,
+      variations,
     } = body;
 
     // Validate fields
@@ -73,6 +74,7 @@ export async function POST(request: Request) {
         category,
         price12Bar: price12Bar ? parseFloat(price12Bar.toString()) : null,
         cutoffPrice12Bar: cutoffPrice12Bar ? parseFloat(cutoffPrice12Bar.toString()) : null,
+        variations: variations ? variations : null,
       },
     });
 

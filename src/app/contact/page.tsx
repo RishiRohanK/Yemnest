@@ -8,12 +8,12 @@ export default function ContactPage() {
           
           <div>
             <h2 className="text-xl text-[#724D26] mt-8 mb-4 font-medium">Email</h2>
-            <p>You can email us anytime at: <strong>support@yemnest.com</strong></p>
+            <p>You can email us anytime at: <strong>yemnest@gmail.com</strong></p>
           </div>
 
           <div>
             <h2 className="text-xl text-[#724D26] mt-8 mb-4 font-medium">WhatsApp</h2>
-            <p>For immediate assistance, message us on WhatsApp at: <strong>+91 9876543210</strong></p>
+            <p>For immediate assistance, message us on WhatsApp at: <strong>+91 7337493643</strong></p>
           </div>
 
           <div>

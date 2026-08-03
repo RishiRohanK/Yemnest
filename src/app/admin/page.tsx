@@ -64,6 +64,7 @@ interface Product {
   image3: string;
   image4: string;
   category: string;
+  variations?: any;
 }
 
 interface Coupon {
@@ -338,6 +339,7 @@ export default function AdminPage() {
   const [prodImage2, setProdImage2] = useState("");
   const [prodImage3, setProdImage3] = useState("");
   const [prodImage4, setProdImage4] = useState("");
+  const [prodVariations, setProdVariations] = useState<any>({});
   
   // Coupon Form State
   const [couponCode, setCouponCode] = useState("");
@@ -607,6 +609,7 @@ export default function AdminPage() {
     setProdImage4("");
     setProdCategory("Atelier Specialties");
     setCustomCategory("");
+    setProdVariations({});
   };
 
   const openEditProductForm = (p: Product) => {
@@ -626,6 +629,7 @@ export default function AdminPage() {
     setProdImage4(p.image4);
     setProdCategory(p.category);
     setCustomCategory("");
+    setProdVariations(p.variations || {});
   };
 
   const handleDeleteProduct = async (id: string) => {
@@ -723,6 +727,7 @@ export default function AdminPage() {
         image3: prodImage3,
         image4: prodImage4,
         category: finalCategory,
+        variations: prodVariations,
       }),
     })
       .then(async (res) => {
@@ -1580,7 +1585,7 @@ export default function AdminPage() {
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
-                    Price 6-Bar (₹)
+                    Price 6-Bite (₹)
                   </label>
                   <input
                     type="number"
@@ -1594,7 +1599,7 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
-                    Cutoff 6-Bar (₹)
+                    Cutoff 6-Bite (₹)
                   </label>
                   <input
                     type="number"
@@ -1608,7 +1613,7 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
-                    Price 12-Bar (₹)
+                    Price 12-Bite (₹)
                   </label>
                   <input
                     type="number"
@@ -1621,7 +1626,7 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider font-medium text-zinc-500 mb-1">
-                    Cutoff 12-Bar (₹)
+                    Cutoff 12-Bite (₹)
                   </label>
                   <input
                     type="number"
@@ -1673,6 +1678,55 @@ export default function AdminPage() {
                   )}
                 </div>
               </div>
+
+              {/* Festive Variations Pricing */}
+              {(prodCategory.toLowerCase().includes("gift box") || prodName.toLowerCase().includes("special box") || prodCategory.toLowerCase().includes("festive")) && (
+                <div className="space-y-3 mt-6 mb-4">
+                  <span className="block text-[10px] uppercase tracking-wider font-medium text-[#724D26] border-b border-zinc-100 pb-1">
+                    Festive Variations Pricing (Overrides default pricing)
+                  </span>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {["6", "12"].map(size => (
+                      <div key={size} className="space-y-2 border border-zinc-200 p-3 bg-white">
+                        <div className="text-xs font-bold border-b border-zinc-100 pb-1">{size} Size</div>
+                        {["Plain", "Nuts", "Kunafa"].map(flavour => (
+                          <div key={flavour} className="flex flex-col gap-1">
+                            <span className="text-[10px] text-zinc-500 font-semibold">{flavour}</span>
+                            <div className="flex gap-2">
+                              <input 
+                                type="number" 
+                                placeholder="Price" 
+                                className="w-full px-2 py-1 border border-zinc-200 text-[10px] focus:outline-none focus:border-[#106636]"
+                                value={prodVariations?.[size]?.[flavour]?.price || ""}
+                                onChange={(e) => {
+                                  const newVar = { ...prodVariations };
+                                  if (!newVar[size]) newVar[size] = {};
+                                  if (!newVar[size][flavour]) newVar[size][flavour] = {};
+                                  newVar[size][flavour].price = parseFloat(e.target.value) || 0;
+                                  setProdVariations(newVar);
+                                }}
+                              />
+                              <input 
+                                type="number" 
+                                placeholder="Cutoff" 
+                                className="w-full px-2 py-1 border border-zinc-200 text-[10px] focus:outline-none focus:border-[#106636]"
+                                value={prodVariations?.[size]?.[flavour]?.cutoffPrice || ""}
+                                onChange={(e) => {
+                                  const newVar = { ...prodVariations };
+                                  if (!newVar[size]) newVar[size] = {};
+                                  if (!newVar[size][flavour]) newVar[size][flavour] = {};
+                                  newVar[size][flavour].cutoffPrice = parseFloat(e.target.value) || 0;
+                                  setProdVariations(newVar);
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Description */}
               <div>

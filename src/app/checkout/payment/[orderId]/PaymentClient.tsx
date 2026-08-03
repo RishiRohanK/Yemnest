@@ -12,15 +12,15 @@ export default function PaymentClient({ order }: { order: any }) {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const merchantUpiId = "yemnest@merchant"; // Replace with real UPI ID
+  const merchantUpiId = "yemnest@ucobank";
   const merchantName = "Yemnest Chocolates";
   const amountStr = order.totalPrice.toFixed(2);
   
   // UPI Deep link (still used for mobile clicking)
   const upiLink = `upi://pay?pa=${merchantUpiId}&pn=${encodeURIComponent(merchantName)}&am=${amountStr}&cu=INR`;
   
-  // Use the statically uploaded QR code for now
-  const qrUrl = "/images/QR.jpeg";
+  // Generate dynamic QR code using a free API
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiLink)}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(merchantUpiId);
@@ -88,7 +88,7 @@ export default function PaymentClient({ order }: { order: any }) {
       messageText += `\n*Total Paid:* ₹${order.totalPrice.toFixed(2)}\n\n`;
       messageText += `Please verify this payment and confirm my order!`;
 
-      const whatsappNumber = "919876543210"; // Placeholder shop WhatsApp number
+      const whatsappNumber = "917337493643"; // Shop WhatsApp number
       const encodedText = encodeURIComponent(messageText);
       const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedText}`;
       

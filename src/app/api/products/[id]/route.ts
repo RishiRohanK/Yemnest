@@ -61,6 +61,7 @@ export async function PUT(
         image3: body.image3,
         image4: body.image4,
         category: body.category,
+        variations: body.variations !== undefined ? body.variations : undefined,
       },
     });
     

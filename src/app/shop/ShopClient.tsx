@@ -24,7 +24,7 @@ interface Product {
   dietary?: string;
 }
 
-const CATEGORIES = ["All", "Kunafa Bars", "Gift Boxes", "Atelier Specialties"];
+const CATEGORIES = ["All", "Kunafa Bites", "Gift Boxes", "Atelier Specialties"];
 
 const RakshaSlideshow = ({ images }: { images: string[] }) => {
   return (
@@ -110,7 +110,7 @@ const ProductCard = memo(({ product, onAddToCart, priority, isWishlisted, onTogg
             <div className="flex flex-col gap-1">
               <span className="text-[10px] font-semibold text-[#8A6F54] uppercase tracking-widest">{product.category}</span>
               {(product.category.toLowerCase().includes("gift box") || product.name.toLowerCase().includes("special box")) && (
-                <span className="text-[9px] text-zinc-500 font-medium">Available in 6 & 12 Bars</span>
+                <span className="text-[9px] text-zinc-500 font-medium">Available in 6 & 12 Bites</span>
               )}
             </div>
             <div className="flex text-yellow-500 text-[10px]">

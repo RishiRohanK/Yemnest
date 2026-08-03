@@ -63,16 +63,16 @@ export default function CollectionsClient() {
           <div className="w-full md:w-1/2 space-y-6">
             <h2 className="text-sm uppercase tracking-[0.2em] text-[#8A6F54] font-semibold">Atelier Signature</h2>
             <h3 className="text-4xl md:text-5xl font-light text-zinc-900 leading-tight">
-              The Kunafa Bars
+              The Kunafa Bites
             </h3>
             <p className="text-zinc-600 text-lg leading-relaxed font-light">
-              Experience the perfect harmony of crispy shredded phyllo pastry and rich, decadent chocolate. Our signature Kunafa bars are crafted with premium ingredients sourced globally, bringing an authentic Middle Eastern texture to modern chocolate artistry.
+              Experience the perfect harmony of crispy shredded phyllo pastry and rich, decadent chocolate. Our signature Kunafa bites are crafted with premium ingredients sourced globally, bringing an authentic Middle Eastern texture to modern chocolate artistry.
             </p>
             <Link
               href="/shop?category=Kunafa+Bars"
               className="inline-block mt-8 bg-zinc-900 text-white px-8 py-4 text-xs uppercase tracking-[0.15em] hover:bg-[#106636] transition-colors"
             >
-              Explore Kunafa Bars
+              Explore Kunafa Bites
             </Link>
           </div>
           <div className="w-full md:w-1/2 relative h-[500px] rounded-2xl overflow-hidden group">
@@ -133,7 +133,7 @@ export default function CollectionsClient() {
       <section className="py-24 px-6 text-center bg-zinc-900 mt-24">
         <h2 className="text-2xl md:text-4xl font-light text-white mb-6">Can't decide?</h2>
         <p className="text-zinc-400 mb-8 max-w-xl mx-auto font-light">
-          Browse our entire catalog of artisanal chocolates, premium kunafa bars, and exclusive gift boxes.
+          Browse our entire catalog of artisanal chocolates, premium kunafa bites, and exclusive gift boxes.
         </p>
         <Link
           href="/shop"

@@ -37,6 +37,7 @@ interface Product {
   image3?: string;
   image4?: string;
   reviews?: Review[];
+  variations?: any;
 }
 
 const themesData = [
@@ -160,11 +161,12 @@ export default function ProductDetailClient({
   const [reviewSuccess, setReviewSuccess] = useState(false);
 
   const isCustomizableBox = product.name.includes("6 Chocolate Gift Box") || product.name.includes("12 Chocolate Gift Box");
-  const isGiftBox = product.category.toLowerCase().includes("gift box") || product.name.toLowerCase().includes("special box");
+  const isGiftBox = product.category.toLowerCase().includes("gift box") || product.name.toLowerCase().includes("special box") || product.category.toLowerCase().includes("festive");
   
   const [selectedTheme, setSelectedTheme] = useState<string>("");
   const [customFestival, setCustomFestival] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<"6" | "12">("6");
+  const [selectedFlavour, setSelectedFlavour] = useState<"Plain" | "Nuts" | "Kunafa">("Plain");
 
   useEffect(() => {
     const syncWishlist = () => {
@@ -277,16 +279,26 @@ export default function ProductDetailClient({
       }
 
       const sizeTag = isGiftBox ? selectedSize : undefined;
-      const calculatedPrice12Bar = product.price12Bar || product.price * 1.8;
-      const finalPrice = isGiftBox && selectedSize === "12" ? calculatedPrice12Bar : product.price;
-      const finalName = isGiftBox ? `${product.name} (${selectedSize} Bars)` : product.name;
+      const flavourTag = isGiftBox ? selectedFlavour : undefined;
+      
+      let finalPrice = product.price;
+      if (isGiftBox) {
+        if (product.variations && product.variations[selectedSize] && product.variations[selectedSize][selectedFlavour]?.price) {
+          finalPrice = product.variations[selectedSize][selectedFlavour].price;
+        } else if (selectedSize === "12") {
+          finalPrice = product.price12Bar || product.price * 1.8;
+        }
+      }
+
+      const finalName = isGiftBox ? `${product.name} (${selectedSize} Size - ${selectedFlavour})` : product.name;
       const productToAdd = { ...product, price: finalPrice, name: finalName };
 
       const existingIndex = items.findIndex((item: any) => 
         item.product.id === product.id && 
         item.theme === selectedTheme && 
         item.customFestival === customFestival &&
-        item.size === sizeTag
+        item.size === sizeTag &&
+        item.flavour === flavourTag
       );
       
       if (existingIndex > -1) {
@@ -300,7 +312,7 @@ export default function ProductDetailClient({
           toast.error(`You cannot add more. Only ${product.stockCount} in stock!`);
           return;
         }
-        items.push({ product: productToAdd, quantity, theme: selectedTheme, customFestival: customFestival, size: sizeTag } as any);
+        items.push({ product: productToAdd, quantity, theme: selectedTheme, customFestival: customFestival, size: sizeTag, flavour: flavourTag } as any);
       }
 
       const lightweightItems = items.map(item => ({
@@ -472,7 +484,7 @@ export default function ProductDetailClient({
                 {product.category}
               </span>
               {(product.category.toLowerCase().includes("gift box") || product.name.toLowerCase().includes("special box")) && (
-                <span className="text-xs text-[#106636] font-semibold">★ Available in 6 & 12 Bar Sizes</span>
+                <span className="text-xs text-[#106636] font-semibold">★ Available in 6 & 12 Bite Sizes</span>
               )}
             </div>
             <h1 className={`text-3xl sm:text-5xl tracking-tight mb-2 ${
@@ -498,13 +510,30 @@ export default function ProductDetailClient({
 
             <div className="flex items-end gap-4 mb-8">
               <span className="text-3xl font-normal text-[#106636]">
-                ₹{(isGiftBox && selectedSize === "12" ? (product.price12Bar || product.price * 1.8) : product.price).toFixed(2)}
+                ₹{(() => {
+                  if (isGiftBox) {
+                    if (product.variations && product.variations[selectedSize] && product.variations[selectedSize][selectedFlavour]?.price) {
+                      return product.variations[selectedSize][selectedFlavour].price.toFixed(2);
+                    }
+                    if (selectedSize === "12") return (product.price12Bar || product.price * 1.8).toFixed(2);
+                  }
+                  return product.price.toFixed(2);
+                })()}
               </span>
-              {(product.cutoffPrice ?? 0) > product.price && (
-                <span className="text-lg text-zinc-400 line-through mb-1">
-                  ₹{(isGiftBox && selectedSize === "12" ? (product.cutoffPrice12Bar || product.cutoffPrice! * 1.8) : product.cutoffPrice!).toFixed(2)}
-                </span>
-              )}
+              <span className="text-lg text-zinc-400 line-through mb-1">
+                {(() => {
+                  let cutoff = product.cutoffPrice;
+                  if (isGiftBox) {
+                    if (product.variations && product.variations[selectedSize] && product.variations[selectedSize][selectedFlavour]?.cutoffPrice) {
+                      cutoff = product.variations[selectedSize][selectedFlavour].cutoffPrice;
+                    } else if (selectedSize === "12") {
+                      cutoff = product.cutoffPrice12Bar || product.cutoffPrice! * 1.8;
+                    }
+                  }
+                  let currentPrice = isGiftBox ? (product.variations?.[selectedSize]?.[selectedFlavour]?.price || (selectedSize === "12" ? (product.price12Bar || product.price * 1.8) : product.price)) : product.price;
+                  return (cutoff ?? 0) > currentPrice ? `₹${cutoff!.toFixed(2)}` : null;
+                })()}
+              </span>
             </div>
 
             <p className="text-sm text-zinc-600 leading-relaxed font-normal mb-8">
@@ -533,25 +562,42 @@ export default function ProductDetailClient({
               </li>
             </ul>
 
+            {/* Flavour Options for Gift Boxes */}
+            {isGiftBox && (
+              <div className="bg-[#FEFEFD] p-6 border border-zinc-200 shadow-sm mb-6">
+                <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-3">
+                  Select Flavour
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  {["Plain", "Nuts", "Kunafa"].map((flavour) => (
+                    <button 
+                      key={flavour}
+                      onClick={() => setSelectedFlavour(flavour as "Plain" | "Nuts" | "Kunafa")}
+                      className={`flex-1 min-w-[100px] py-3 text-sm font-medium border transition-colors ${selectedFlavour === flavour ? "border-[#106636] bg-[#106636]/5 text-[#106636]" : "border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}
+                    >
+                      {flavour}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Size Options for Gift Boxes */}
             {isGiftBox && (
               <div className="bg-[#FEFEFD] p-6 border border-zinc-200 shadow-sm mb-6">
                 <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-3">
                   Select Size
                 </label>
-                <div className="flex gap-4">
-                  <button 
-                    onClick={() => setSelectedSize("6")}
-                    className={`flex-1 py-3 text-sm font-medium border transition-colors ${selectedSize === "6" ? "border-[#106636] bg-[#106636]/5 text-[#106636]" : "border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}
-                  >
-                    6 Bars
-                  </button>
-                  <button 
-                    onClick={() => setSelectedSize("12")}
-                    className={`flex-1 py-3 text-sm font-medium border transition-colors ${selectedSize === "12" ? "border-[#106636] bg-[#106636]/5 text-[#106636]" : "border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}
-                  >
-                    12 Bars
-                  </button>
+                <div className="flex flex-wrap gap-4">
+                  {["6", "12"].map((size) => (
+                    <button 
+                      key={size}
+                      onClick={() => setSelectedSize(size as "6" | "12")}
+                      className={`flex-1 min-w-[100px] py-3 text-sm font-medium border transition-colors ${selectedSize === size ? "border-[#106636] bg-[#106636]/5 text-[#106636]" : "border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}
+                    >
+                      {`${size} Bites`}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}

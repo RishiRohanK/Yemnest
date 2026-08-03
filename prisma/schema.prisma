@@ -65,6 +65,7 @@ model Product {
   category     String   @default("Atelier Specialties")
   dietary      String   @default("[\"Vegetarian\", \"Contains Nuts\"]")
   displayOrder Int      @default(0)
+  variations   Json?
   createdAt    DateTime @default(now())
   reviews      Review[]
 }
